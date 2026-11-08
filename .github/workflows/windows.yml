@@ -75,3 +75,33 @@ jobs:
             --notes-file notes.md \
             --target "$GITHUB_SHA" \
             --latest=false
+
+      # Branche « app-windows » : l'app dézippée, directement dans le dépôt (chaque fichier < 100 Mo).
+      # Remplacée à chaque version (pas d'historique), pour ne pas alourdir le dépôt.
+      - name: Publier l'app dans la branche app-windows
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BIG=$(find out/ZappTV -type f -size +95M)
+          if [ -n "$BIG" ]; then echo "Fichier trop gros pour GitHub : $BIG"; exit 1; fi
+          cd out
+          cat > README.md <<'MD'
+          # Zapp TV pour Windows — app prête à lancer
+
+          **Télécharger :** bouton vert **Code** → **Download ZIP**, puis dézippe et lance `ZappTV/ZappTV.exe`.
+
+          Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
+
+          Cette branche est générée automatiquement par GitHub Actions à chaque mise à jour.
+          Le code source est sur la branche `main`.
+          MD
+          sed -i 's/^          //' README.md
+          git init -q -b app-windows
+          git config core.autocrlf false
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Zapp TV pour Windows (build ${{ github.run_number }}, ${GITHUB_SHA::7})"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" app-windows
+          echo "Publié : https://github.com/${{ github.repository }}/tree/app-windows"

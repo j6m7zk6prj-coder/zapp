@@ -5,7 +5,7 @@ Lecteur IPTV moderne façon Apple TV : chaînes en direct avec zapping, films, s
 | Plateforme | Technologie | Télécharger |
 |---|---|---|
 | iPhone / iPad | SwiftUI + VLC | [Dernière IPA](../../releases/latest) (à installer avec Sideloadly / AltStore) |
-| Windows 10 / 11 | C# WPF + VLC | [ZappTV-Windows-x64.zip](../../releases/download/windows-latest/ZappTV-Windows-x64.zip) (dézipper, lancer `ZappTV.exe`) |
+| Windows 10 / 11 | C# WPF + VLC | [ZappTV-Windows-x64.zip](../../releases/download/windows-latest/ZappTV-Windows-x64.zip) ou la branche [`app-windows`](../../tree/app-windows) (dézipper, lancer `ZappTV.exe`) |
 
 > Zapp est **uniquement un lecteur**. Il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des playlists auxquelles tu as légalement accès.
 
