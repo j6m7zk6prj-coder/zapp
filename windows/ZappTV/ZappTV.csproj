@@ -9,14 +9,14 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <SatelliteResourceLanguages>fr</SatelliteResourceLanguages>
+    <!-- Seule la version 64 bits de VLC est embarquée (zip deux fois plus léger). -->
+    <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Moteur VLC officiel : lit tous les formats (HLS, TS, MKV, RTMP, RTSP, UDP…) -->
     <PackageReference Include="LibVLCSharp.WPF" Version="3.*" />
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.*" />
-    <!-- Chiffrement des mots de passe Xtream avec le compte Windows (DPAPI) -->
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="*" />
   </ItemGroup>
 
   <ItemGroup>
