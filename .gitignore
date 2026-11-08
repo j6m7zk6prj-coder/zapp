@@ -1,0 +1,21 @@
+# Projet généré par XcodeGen (source de vérité : project.yml)
+*.xcodeproj/
+Supporting/Info.plist
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.ipa
+*.dSYM.zip
+*.dSYM
+Payload/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
