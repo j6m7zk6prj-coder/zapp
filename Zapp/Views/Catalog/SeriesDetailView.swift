@@ -3,68 +3,79 @@ import SwiftUI
 struct SeriesDetailView: View {
     let series: MediaItem
     @Environment(PlaylistStore.self) private var playlists
-    @Environment(PlayerPresenter.self) private var presenter
+    @Environment(Library.self) private var library
+    @Environment(Router.self) private var router
     @Environment(FavoritesStore.self) private var favorites
     @State private var detail: SeriesDetail?
     @State private var loadError: String?
     @State private var season = 1
 
     var body: some View {
+        let current = library.item(series.id) ?? series
+
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                header
-                if let detail {
-                    content(detail)
-                } else if let loadError {
-                    ContentUnavailableView(
-                        "Épisodes indisponibles",
-                        systemImage: "exclamationmark.triangle",
-                        description: Text(loadError)
-                    )
-                } else {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 40)
+            VStack(alignment: .leading, spacing: 22) {
+                DetailHeader(item: current, subtitle: subtitle(current)) {
+                    HStack(spacing: 12) {
+                        Button {
+                            playFirstEpisode(current)
+                        } label: {
+                            Label("Lire", systemImage: "play.fill")
+                        }
+                        .buttonStyle(PrimaryActionStyle())
+                        .disabled(detail?.episodes.isEmpty ?? true)
+
+                        Button {
+                            favorites.toggle(current)
+                        } label: {
+                            Image(systemName: favorites.contains(current) ? "checkmark" : "plus")
+                        }
+                        .buttonStyle(CircleActionStyle())
+
+                        Button {
+                            router.edit(current)
+                        } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .buttonStyle(CircleActionStyle())
+                    }
                 }
+
+                Group {
+                    if let detail {
+                        content(detail, seriesName: current.name)
+                    } else if let loadError {
+                        ContentUnavailableView(
+                            "Épisodes indisponibles",
+                            systemImage: "exclamationmark.triangle",
+                            description: Text(loadError)
+                        )
+                    } else {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 20)
+                    }
+                }
+                .padding(.horizontal)
             }
-            .padding()
+            .padding(.bottom, 30)
         }
+        .ignoresSafeArea(edges: .top)
         .background(Theme.background.ignoresSafeArea())
-        .navigationTitle(series.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task { await load() }
     }
 
-    private var header: some View {
-        HStack(alignment: .top, spacing: 16) {
-            PosterArt(item: series)
-                .frame(width: 120)
-            VStack(alignment: .leading, spacing: 8) {
-                Text(series.name)
-                    .font(.title3.weight(.bold))
-                Text(detail?.genre ?? series.group)
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.textSecondary)
-                if let rating = series.rating, rating > 0 {
-                    Label(String(format: "%.1f", rating), systemImage: "star.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.yellow)
-                }
-                let isFavorite = favorites.contains(series)
-                Button {
-                    favorites.toggle(series)
-                } label: {
-                    Label(isFavorite ? "Dans ma liste" : "Ma liste",
-                          systemImage: isFavorite ? "checkmark" : "plus")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.bordered)
-            }
-        }
+    private func subtitle(_ item: MediaItem) -> String {
+        var parts = ["Série", detail?.genre ?? item.group]
+        if let rating = item.rating, rating > 0 { parts.append("★ " + String(format: "%.1f", rating)) }
+        if let count = detail?.seasons.count, count > 0 { parts.append(count == 1 ? "1 saison" : "\(count) saisons") }
+        return parts.joined(separator: " · ")
     }
 
     @ViewBuilder
-    private func content(_ detail: SeriesDetail) -> some View {
+    private func content(_ detail: SeriesDetail, seriesName: String) -> some View {
         if let plot = detail.plot, !plot.isEmpty {
             Text(plot)
                 .font(.subheadline)
@@ -72,12 +83,30 @@ struct SeriesDetailView: View {
         }
 
         if detail.seasons.count > 1 {
-            Picker("Saison", selection: $season) {
-                ForEach(detail.seasons, id: \.self) { number in
-                    Text("Saison \(number)").tag(number)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(detail.seasons, id: \.self) { number in
+                        let selected = number == season
+                        Button {
+                            withAnimation(.snappy) { season = number }
+                        } label: {
+                            Text("Saison \(number)")
+                                .font(.subheadline.weight(.semibold))
+                                .padding(.horizontal, 15)
+                                .padding(.vertical, 8)
+                                .background {
+                                    if selected {
+                                        Capsule().fill(Theme.accent)
+                                    } else {
+                                        Capsule().fill(.ultraThinMaterial)
+                                    }
+                                }
+                                .foregroundStyle(selected ? Theme.onAccent : Color.white)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
-            .pickerStyle(.menu)
         }
 
         let episodes = detail.episodes.filter { $0.season == season }
@@ -87,15 +116,19 @@ struct SeriesDetailView: View {
         }
         ForEach(Array(episodes.enumerated()), id: \.element.id) { index, episode in
             Button {
-                presenter.play(
-                    queue: episodes.map { $0.playable(seriesName: series.name) },
-                    index: index
-                )
+                router.play(queue: episodes.map { $0.playable(seriesName: seriesName) }, index: index)
             } label: {
-                EpisodeRow(episode: episode, seriesName: series.name)
+                EpisodeRow(episode: episode, seriesName: seriesName)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CardButtonStyle())
         }
+    }
+
+    private func playFirstEpisode(_ current: MediaItem) {
+        guard let detail else { return }
+        let episodes = detail.episodes.filter { $0.season == season }
+        guard !episodes.isEmpty else { return }
+        router.play(queue: episodes.map { $0.playable(seriesName: current.name) }, index: 0)
     }
 
     private func load() async {
@@ -122,7 +155,7 @@ private struct EpisodeRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Color.clear
-                .frame(width: 128, height: 72)
+                .frame(width: 132, height: 74)
                 .overlay {
                     AsyncImage(url: episode.imageURL) { phase in
                         if let image = phase.image {
@@ -131,15 +164,25 @@ private struct EpisodeRow: View {
                             ZStack {
                                 Theme.gradient(for: seriesName + "\(episode.season)")
                                 Text("E\(episode.number)")
-                                    .font(.headline.weight(.heavy))
+                                    .font(.system(.headline, design: .rounded).weight(.heavy))
                             }
                         }
                     }
                 }
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.title3)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .black.opacity(0.4))
+                        .padding(5)
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(episode.number). \(episode.title)")
+                Text("ÉPISODE \(episode.number)")
+                    .font(.caption2.weight(.heavy))
+                    .foregroundStyle(Theme.textSecondary)
+                Text(episode.title)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(2)
                 if let duration = episode.duration {
@@ -149,10 +192,9 @@ private struct EpisodeRow: View {
                 }
             }
             Spacer(minLength: 0)
-            Image(systemName: "play.circle.fill")
-                .font(.title2)
-                .foregroundStyle(Theme.accent)
         }
+        .padding(8)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .contentShape(Rectangle())
     }
 }

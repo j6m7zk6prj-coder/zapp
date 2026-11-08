@@ -14,26 +14,31 @@ struct SearchView: View {
                     let found = results[kind] ?? []
                     if !found.isEmpty {
                         let shown = Array(found.prefix(maxPerSection))
-                        Section("\(kind.title) (\(found.count.formatted()))") {
+                        Section {
                             ForEach(shown) { item in
                                 MediaButton(item: item, context: shown) {
                                     ChannelRow(item: item)
                                 }
-                                .listRowBackground(Theme.background)
+                                .listRowBackground(Color.clear)
+                                .listRowSeparatorTint(.white.opacity(0.08))
                             }
+                        } header: {
+                            Text("\(kind.title) · \(found.count.formatted())")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .textCase(nil)
                         }
                     }
                 }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Theme.background.ignoresSafeArea())
+            .background(Theme.backdrop.ignoresSafeArea())
             .navigationTitle("Recherche")
-            .toolbarBackground(Theme.background, for: .navigationBar)
             .searchable(
                 text: $query,
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: "Chaînes, films, séries"
+                prompt: "Chaînes, films, séries, catégories"
             )
             .autocorrectionDisabled()
             .task(id: query) {
@@ -45,7 +50,7 @@ struct SearchView: View {
                 results = found
             }
             .overlay { emptyState }
-            .navigationDestination(for: MediaItem.self) { SeriesDetailView(series: $0) }
+            .mediaDestinations()
         }
     }
 
@@ -56,7 +61,7 @@ struct SearchView: View {
             ContentUnavailableView(
                 "Rechercher",
                 systemImage: "magnifyingglass",
-                description: Text("Tape au moins 2 lettres : nom de chaîne, film ou série.")
+                description: Text("Tape au moins 2 lettres : nom de chaîne, film, série ou catégorie.")
             )
         } else if results.values.allSatisfy(\.isEmpty) {
             ContentUnavailableView.search(text: trimmed)

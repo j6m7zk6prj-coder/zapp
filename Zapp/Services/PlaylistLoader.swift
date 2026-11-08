@@ -44,6 +44,14 @@ enum AppPaths {
         playlistsFolder.appendingPathComponent(name)
     }
 
+    static var logosFolder: URL {
+        documents.appendingPathComponent("Logos", isDirectory: true)
+    }
+
+    static func logoFile(_ name: String) -> URL {
+        logosFolder.appendingPathComponent(name)
+    }
+
     static func ensurePlaylistsFolder() throws {
         try FileManager.default.createDirectory(at: playlistsFolder, withIntermediateDirectories: true)
     }

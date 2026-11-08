@@ -5,14 +5,16 @@ Lecteur IPTV iOS en SwiftUI. Aucun contenu n'est fourni par l'app.
 ## Stack
 - Swift, SwiftUI, iOS 17+, Observation (`@Observable`), AVKit
 - Projet Xcode généré par XcodeGen depuis `project.yml` (ne jamais éditer le `.xcodeproj`)
-- Aucune dépendance externe
+- Une seule dépendance : MobileVLCKit (CocoaPods). Le code VLC est entouré de `#if canImport(MobileVLCKit)` pour compiler même sans `pod install`
 
 ## Architecture
 - `Models/` : types valeur `Sendable` (MediaItem, Playlist, Episode)
 - `Services/` : code pur, sans état UI (M3UParser, XtreamClient, PlaylistLoader, Keychain, LibraryCache)
 - `Stores/` : classes `@MainActor @Observable` injectées via `.environment(...)`
 - `Views/` : un dossier par écran, composants partagés dans `Views/Components`
-- La lecture passe toujours par `PlayerPresenter` (lecteur plein écran unique dans `RootView`)
+- La lecture et l'édition passent par `Router` (lecteur plein écran et éditeur uniques dans `RootView`)
+- Les liens perso (`CustomLink`) et les modifications (`ItemOverride`) vivent dans `CustomizationStore` ; `Library` les fusionne avec la playlist
+- Couleurs : toujours via `Theme` (dérivé d'`AppSettings`), jamais de couleur codée en dur dans les écrans
 
 ## Règles
 - Textes de l'interface en français, tutoiement
@@ -23,6 +25,6 @@ Lecteur IPTV iOS en SwiftUI. Aucun contenu n'est fourni par l'app.
 
 ## Commandes
 ```bash
-xcodegen generate
-xcodebuild test -project Zapp.xcodeproj -scheme Zapp -destination 'platform=iOS Simulator,name=iPhone 16'
+xcodegen generate && pod install
+xcodebuild test -workspace Zapp.xcworkspace -scheme Zapp -destination 'platform=iOS Simulator,name=iPhone 16'
 ```

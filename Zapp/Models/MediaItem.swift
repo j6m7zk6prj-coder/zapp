@@ -80,13 +80,7 @@ struct MediaItem: Identifiable, Hashable, Codable, Sendable {
     }
 
     /// Initiales utilisées quand il n'y a pas de logo.
-    var initials: String {
-        let words = displayName
-            .split(separator: " ")
-            .filter { $0.first?.isLetter == true || $0.first?.isNumber == true }
-        let letters = String(words.prefix(2).compactMap { $0.first }).uppercased()
-        return letters.isEmpty ? "TV" : letters
-    }
+    var initials: String { displayName.initials }
 
     /// Une série Xtream ouvre une fiche avec ses épisodes ; le reste se lit directement.
     var opensDetail: Bool { kind == .series && seriesID != nil }
@@ -145,6 +139,16 @@ struct SeriesDetail: Sendable {
 }
 
 extension String {
+    /// Deux premières initiales, utilisées quand il n'y a pas de logo.
+    var initials: String {
+        let words = split(separator: " ")
+            .filter { $0.first?.isLetter == true || $0.first?.isNumber == true }
+        let letters = String(words.prefix(2).compactMap { $0.first }).uppercased()
+        return letters.isEmpty ? "TV" : letters
+    }
+
+    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
+
     /// Hash FNV-1a stable d'une exécution à l'autre (contrairement à `hashValue`).
     var stableHash: UInt64 {
         var hash: UInt64 = 14_695_981_039_346_656_037

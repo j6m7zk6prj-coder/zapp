@@ -23,6 +23,15 @@ jobs:
       - name: Générer le projet Xcode
         run: xcodegen generate
 
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('Podfile') }}
+
+      - name: Installer les dépendances (MobileVLCKit)
+        run: pod install
+
       - name: Choisir un simulateur iPhone
         id: sim
         run: |
@@ -44,7 +53,7 @@ jobs:
       - name: Lancer les tests
         run: |
           xcodebuild test -quiet \
-            -project Zapp.xcodeproj \
+            -workspace Zapp.xcworkspace \
             -scheme Zapp \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             CODE_SIGNING_ALLOWED=NO
@@ -62,10 +71,19 @@ jobs:
       - name: Générer le projet Xcode
         run: xcodegen generate
 
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('Podfile') }}
+
+      - name: Installer les dépendances (MobileVLCKit)
+        run: pod install
+
       - name: Compiler pour iPhone (sans signature)
         run: |
           xcodebuild build -quiet \
-            -project Zapp.xcodeproj \
+            -workspace Zapp.xcworkspace \
             -scheme Zapp \
             -configuration Release \
             -sdk iphoneos \
@@ -75,6 +93,7 @@ jobs:
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/Zapp.app Payload/
           zip -qr Zapp-unsigned.ipa Payload
+          ls -lh Zapp-unsigned.ipa
 
       - uses: actions/upload-artifact@v4
         with:

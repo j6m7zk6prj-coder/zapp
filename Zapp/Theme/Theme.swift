@@ -1,16 +1,31 @@
 import SwiftUI
+import UIKit
 
+/// Couleurs de l'app, dérivées des réglages d'apparence (mises à jour en direct).
+@MainActor
 enum Theme {
-    static let background = Color(hex: 0x0A0D17)
-    static let surface = Color(hex: 0x141827)
-    static let surfaceHigh = Color(hex: 0x1F2436)
-    static let accent = Color(hex: 0x4F6BFF)
-    static let textSecondary = Color.white.opacity(0.6)
+    private static var settings: AppSettings { AppSettings.shared }
+
+    static var accent: Color { Color(hex: settings.accentHex) }
+    /// Couleur du texte posé sur la couleur d'accent.
+    static var onAccent: Color { isLight(settings.accentHex) ? .black : .white }
+    static var background: Color { Color(hex: settings.background.base) }
+    static var surface: Color { Color(hex: settings.background.surface) }
+    static var surfaceHigh: Color { Color(hex: settings.background.surfaceHigh) }
+    static let textSecondary = Color.white.opacity(0.62)
+
+    /// Fond des écrans : légère lueur en haut, façon Apple TV.
+    static var backdrop: LinearGradient {
+        LinearGradient(
+            colors: [Color(hex: settings.background.glow), background, background],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
 
     static let liveGradient = LinearGradient(colors: [Color(hex: 0x4569FF), Color(hex: 0x2A44D8)], startPoint: .topLeading, endPoint: .bottomTrailing)
     static let moviesGradient = LinearGradient(colors: [Color(hex: 0x9B5CF6), Color(hex: 0x6227D9)], startPoint: .topLeading, endPoint: .bottomTrailing)
     static let seriesGradient = LinearGradient(colors: [Color(hex: 0xEC3B5E), Color(hex: 0xA3123A)], startPoint: .topLeading, endPoint: .bottomTrailing)
-    static let searchGradient = LinearGradient(colors: [Color(hex: 0x262C3F), Color(hex: 0x171B2A)], startPoint: .topLeading, endPoint: .bottomTrailing)
 
     private static let palettes: [(UInt32, UInt32)] = [
         (0x2A9DB5, 0x1E3A8A),
@@ -35,6 +50,13 @@ enum Theme {
             endPoint: .bottomTrailing
         )
     }
+
+    static func isLight(_ hex: UInt32) -> Bool {
+        let r = Double((hex >> 16) & 0xFF)
+        let g = Double((hex >> 8) & 0xFF)
+        let b = Double(hex & 0xFF)
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.68
+    }
 }
 
 extension Color {
@@ -44,5 +66,15 @@ extension Color {
             green: Double((hex >> 8) & 0xFF) / 255,
             blue: Double(hex & 0xFF) / 255
         )
+    }
+
+    /// Valeur RGB 0xRRGGBB (pour enregistrer une couleur choisie au ColorPicker).
+    var hexValue: UInt32 {
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        UIColor(self).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        func channel(_ value: CGFloat) -> UInt32 {
+            UInt32(max(0, min(255, (value * 255).rounded())))
+        }
+        return channel(red) << 16 | channel(green) << 8 | channel(blue)
     }
 }

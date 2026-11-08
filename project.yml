@@ -10,9 +10,11 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "2"
     CODE_SIGN_STYLE: Automatic
+    # Nécessaire pour les scripts CocoaPods (MobileVLCKit) avec Xcode 15+.
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
     # Mets ici ton Team ID Apple (Xcode > Signing & Capabilities) ou choisis-le dans Xcode.
     DEVELOPMENT_TEAM: ""
 
@@ -35,6 +37,7 @@ targets:
         UIUserInterfaceStyle: Dark
         UIBackgroundModes: [audio]
         ITSAppUsesNonExemptEncryption: false
+        NSLocalNetworkUsageDescription: Zapp lit les flux de ton réseau local (UDP, RTSP, multicast).
         # Beaucoup de flux IPTV sont en http:// : on autorise le chargement non chiffré.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true

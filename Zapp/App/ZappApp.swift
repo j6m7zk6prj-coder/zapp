@@ -6,7 +6,8 @@ struct ZappApp: App {
     @State private var playlists = PlaylistStore()
     @State private var library = Library()
     @State private var favorites = FavoritesStore()
-    @State private var presenter = PlayerPresenter()
+    @State private var customization = CustomizationStore()
+    @State private var router = Router()
 
     init() {
         // Cache plus large pour les logos et affiches.
@@ -21,7 +22,9 @@ struct ZappApp: App {
                 .environment(playlists)
                 .environment(library)
                 .environment(favorites)
-                .environment(presenter)
+                .environment(customization)
+                .environment(router)
+                .environment(AppSettings.shared)
                 .preferredColorScheme(.dark)
                 .tint(Theme.accent)
         }

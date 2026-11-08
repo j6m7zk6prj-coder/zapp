@@ -2,6 +2,10 @@
 *.xcodeproj/
 Supporting/Info.plist
 
+# CocoaPods (installé par `pod install`)
+Pods/
+*.xcworkspace/
+
 # Xcode
 build/
 DerivedData/

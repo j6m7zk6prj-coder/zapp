@@ -92,3 +92,82 @@ final class MediaItemTests: XCTestCase {
         XCTAssertEqual(item.initials, "CD")
     }
 }
+
+final class LinkInspectorTests: XCTestCase {
+    func testNormalizeAddsSchemeAndRejectsGarbage() {
+        XCTAssertEqual(LinkInspector.normalize("example.com/live/a.m3u8")?.absoluteString,
+                       "http://example.com/live/a.m3u8")
+        XCTAssertEqual(LinkInspector.normalize("  rtmp://example.com/app/stream ")?.scheme, "rtmp")
+        XCTAssertNotNil(LinkInspector.normalize("udp://@239.0.0.1:1234"))
+        XCTAssertNil(LinkInspector.normalize(""))
+        XCTAssertNil(LinkInspector.normalize("javascript://alert(1)"))
+    }
+
+    func testFormatDetection() {
+        func format(_ string: String) -> StreamFormat {
+            LinkInspector.format(of: URL(string: string)!)
+        }
+        XCTAssertEqual(format("http://example.com/a.m3u8"), .hls)
+        XCTAssertEqual(format("http://example.com/a.ts"), .mpegTS)
+        XCTAssertEqual(format("http://example.com/film.mkv"), .mkv)
+        XCTAssertEqual(format("rtsp://example.com/cam"), .rtsp)
+        XCTAssertEqual(format("rtmp://example.com/app/key"), .rtmp)
+        XCTAssertEqual(format("udp://@239.0.0.1:1234"), .udp)
+        XCTAssertEqual(format("http://example.com/play?type=m3u8"), .hls)
+        XCTAssertEqual(format("http://example.com/stream"), .unknown)
+    }
+
+    func testPlaylistDetection() {
+        XCTAssertTrue(LinkInspector.looksLikePlaylist(URL(string: "http://example.com/list.m3u")!))
+        XCTAssertTrue(LinkInspector.looksLikePlaylist(URL(string: "http://example.com/get.php?username=a&password=b&type=m3u_plus")!))
+        XCTAssertFalse(LinkInspector.looksLikePlaylist(URL(string: "http://example.com/live/a.m3u8")!))
+    }
+
+    func testNativeFormats() {
+        XCTAssertTrue(StreamFormat.hls.isNativeOnIOS)
+        XCTAssertTrue(StreamFormat.mp4.isNativeOnIOS)
+        XCTAssertFalse(StreamFormat.mkv.isNativeOnIOS)
+        XCTAssertFalse(StreamFormat.rtmp.isNativeOnIOS)
+    }
+}
+
+final class CustomizationTests: XCTestCase {
+    private let base = MediaItem(id: "a", name: "Original", group: "Groupe", kind: .live,
+                                 streamURL: URL(string: "http://example.com/a.m3u8"),
+                                 logoURL: URL(string: "https://example.com/a.png"))
+
+    func testOverrideAppliesNameGroupAndLogo() {
+        var change = ItemOverride()
+        change.name = "Renommée"
+        change.group = "Sport"
+        change.logoURL = URL(string: "https://example.com/b.png")
+        let result = change.applied(to: base)
+        XCTAssertEqual(result.name, "Renommée")
+        XCTAssertEqual(result.group, "Sport")
+        XCTAssertEqual(result.logoURL?.absoluteString, "https://example.com/b.png")
+        XCTAssertEqual(result.id, base.id)
+    }
+
+    func testBlankOverrideKeepsOriginal() {
+        var change = ItemOverride()
+        change.name = "   "
+        XCTAssertTrue(change.isEmpty)
+        XCTAssertEqual(change.applied(to: base), base)
+    }
+
+    func testRemoveLogo() {
+        var change = ItemOverride()
+        change.removeLogo = true
+        XCTAssertNil(change.applied(to: base).logoURL)
+        XCTAssertFalse(change.isEmpty)
+    }
+
+    func testCustomLinkBecomesMediaItem() {
+        let link = CustomLink(name: "Ma chaîne", url: URL(string: "rtmp://example.com/app/key")!, group: "  ")
+        let item = link.mediaItem
+        XCTAssertTrue(item.isCustomLink)
+        XCTAssertEqual(item.group, CustomLink.defaultGroup)
+        XCTAssertEqual(item.kind, .live)
+        XCTAssertEqual(item.streamURL?.scheme, "rtmp")
+    }
+}
