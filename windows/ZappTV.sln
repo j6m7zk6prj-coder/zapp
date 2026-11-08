@@ -1,0 +1,31 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZappTV", "ZappTV\ZappTV.csproj", "{7C1A9A55-3E2B-4C7A-9C0E-1A2B3C4D5E61}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZappTV.Core", "ZappTV.Core\ZappTV.Core.csproj", "{8D2B0B66-4F3C-4D8B-AD1F-2B3C4D5E6F72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZappTV.Tests", "ZappTV.Tests\ZappTV.Tests.csproj", "{9E3C1C77-5A4D-4E9C-BE20-3C4D5E6F7083}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7C1A9A55-3E2B-4C7A-9C0E-1A2B3C4D5E61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C1A9A55-3E2B-4C7A-9C0E-1A2B3C4D5E61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C1A9A55-3E2B-4C7A-9C0E-1A2B3C4D5E61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C1A9A55-3E2B-4C7A-9C0E-1A2B3C4D5E61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D2B0B66-4F3C-4D8B-AD1F-2B3C4D5E6F72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D2B0B66-4F3C-4D8B-AD1F-2B3C4D5E6F72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D2B0B66-4F3C-4D8B-AD1F-2B3C4D5E6F72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D2B0B66-4F3C-4D8B-AD1F-2B3C4D5E6F72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E3C1C77-5A4D-4E9C-BE20-3C4D5E6F7083}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E3C1C77-5A4D-4E9C-BE20-3C4D5E6F7083}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E3C1C77-5A4D-4E9C-BE20-3C4D5E6F7083}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E3C1C77-5A4D-4E9C-BE20-3C4D5E6F7083}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

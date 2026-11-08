@@ -23,3 +23,10 @@ Payload/
 
 # macOS
 .DS_Store
+
+# .NET (version Windows)
+windows/**/bin/
+windows/**/obj/
+windows/out/
+*.user
+.vs/

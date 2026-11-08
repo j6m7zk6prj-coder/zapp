@@ -1,0 +1,32 @@
+<Window x:Class="ZappTV.Dialogs.OverrideEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:ZappTV.Controls"
+        Title="Modifier" Width="600" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="/Assets/app.ico"
+        Background="{DynamicResource SurfaceBrush}" Foreground="White" FontFamily="{StaticResource UiFont}">
+    <StackPanel Margin="30,24,30,26">
+        <TextBlock Text="Modifier" FontSize="24" FontWeight="Black" />
+        <TextBlock x:Name="OriginalText" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+
+        <TextBlock Text="Nom" Style="{StaticResource FieldLabel}" />
+        <TextBox x:Name="NameBox" Style="{StaticResource Field}" TextChanged="Name_TextChanged" />
+        <TextBlock Style="{StaticResource Caption}" Margin="3,6,0,0" FontSize="12" Text="Laisse vide pour garder le nom d'origine." />
+
+        <TextBlock Text="Catégorie" Style="{StaticResource FieldLabel}" />
+        <c:CategoryBox x:Name="CategoryInput" />
+        <TextBlock Style="{StaticResource Caption}" Margin="3,6,0,0" FontSize="12"
+                   Text="Tape un nouveau nom pour créer une catégorie, ou laisse vide pour garder l'originale." />
+
+        <TextBlock Text="Logo" Style="{StaticResource FieldLabel}" />
+        <c:LogoPicker x:Name="Logo" />
+
+        <CheckBox x:Name="HiddenBox" Margin="2,22,0,0" Content="Masquer cet élément (réaffichable dans Réglages)" />
+
+        <DockPanel Margin="0,26,0,0" LastChildFill="False">
+            <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Click="Save_Click" IsDefault="True" Content="Enregistrer" MinWidth="120" />
+            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Margin="0,0,10,0" IsCancel="True" Content="Annuler" />
+            <Button DockPanel.Dock="Left" Style="{StaticResource GhostButton}" Foreground="#FF7A7A" Click="Reset_Click" Content="Rétablir l'original" />
+        </DockPanel>
+    </StackPanel>
+</Window>

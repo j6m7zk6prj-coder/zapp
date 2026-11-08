@@ -1,0 +1,35 @@
+<UserControl x:Class="ZappTV.Pages.SearchPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ZappTV">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="40,28,40,8" MaxWidth="1000" HorizontalAlignment="Stretch">
+            <TextBlock Text="Recherche" Style="{StaticResource PageTitle}" />
+            <Grid Margin="0,18,0,0">
+                <TextBox x:Name="Query" Style="{StaticResource Field}" Tag="Chaînes, films, séries, catégories…"
+                         FontSize="18" Padding="44,12,12,12" TextChanged="Query_TextChanged" />
+                <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" Margin="16,0,0,0" HorizontalAlignment="Left"
+                           Foreground="{StaticResource TextSecondaryBrush}" IsHitTestVisible="False" />
+            </Grid>
+        </StackPanel>
+
+        <ListBox x:Name="Results" Grid.Row="1" Style="{StaticResource PlainList}" Padding="30,4,16,30">
+            <ListBox.Resources>
+                <DataTemplate DataType="{x:Type local:SearchHeader}">
+                    <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="Bold" Margin="10,22,0,8" />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type local:Tile}">
+                    <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource ListRow}" MaxWidth="1000" HorizontalAlignment="Left" />
+                </DataTemplate>
+            </ListBox.Resources>
+        </ListBox>
+
+        <TextBlock x:Name="EmptyText" Grid.Row="1" Style="{StaticResource Caption}" FontSize="16" TextAlignment="Center"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="460" />
+    </Grid>
+</UserControl>

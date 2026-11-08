@@ -1,6 +1,11 @@
-# Zapp TV — lecteur IPTV pour iPhone
+# Zapp TV — lecteur IPTV pour iPhone et Windows
 
-Lecteur IPTV moderne en **SwiftUI**, façon streaming : chaînes en direct avec zapping, films, séries, recherche et favoris.
+Lecteur IPTV moderne façon Apple TV : chaînes en direct avec zapping, films, séries, recherche, favoris, liens ajoutés un par un et thème personnalisable.
+
+| Plateforme | Technologie | Télécharger |
+|---|---|---|
+| iPhone / iPad | SwiftUI + VLC | [Dernière IPA](../../releases/latest) (à installer avec Sideloadly / AltStore) |
+| Windows 10 / 11 | C# WPF + VLC | [ZappTV-Windows-x64.zip](../../releases/download/windows-latest/ZappTV-Windows-x64.zip) (dézipper, lancer `ZappTV.exe`) |
 
 > Zapp est **uniquement un lecteur**. Il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des playlists auxquelles tu as légalement accès.
 
@@ -85,6 +90,21 @@ Travaille fonctionnalité par fonctionnalité, et teste après chaque modificati
 - « Ajoute un historique "Reprendre la lecture" pour les films »
 - « Ajoute un contrôle parental par code PIN sur certaines catégories »
 - « Ajoute l'import de plusieurs liens collés d'un coup »
+
+## Version Windows
+
+Le dossier [`windows/`](windows) contient l'app PC (.NET 10, WPF, LibVLCSharp) :
+
+- même contenu que sur iPhone : liens perso, playlists M3U / Xtream, favoris, modifications, thème ;
+- interface adaptée au PC : barre latérale, survol à la souris, clic droit, glisser-déposer d'un `.m3u` ou d'un lien ;
+- raccourcis : Ctrl+V coller un lien, Ctrl+F rechercher, F5 actualiser ; dans le lecteur Espace, ↑ ↓ zapping, ← → ±10 s, F plein écran ;
+- `ZappTV.Core` (parser M3U, Xtream, bibliothèque) est testé à chaque push (`windows/ZappTV.Tests`).
+
+Compiler soi-même (Windows + SDK .NET 10) :
+
+```bash
+dotnet run --project windows/ZappTV
+```
 
 ## Licence
 

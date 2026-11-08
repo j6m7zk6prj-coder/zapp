@@ -1,0 +1,33 @@
+<UserControl x:Class="ZappTV.Controls.ShelfView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="0,0,0,26">
+        <Grid Margin="40,0,40,6">
+            <Button x:Name="TitleButton" Style="{StaticResource PlainButton}" HorizontalAlignment="Left" Click="Title_Click">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="TitleText" FontSize="21" FontWeight="Bold" />
+                    <TextBlock x:Name="Chevron" Text="&#xE76C;" Style="{StaticResource Icon}" FontSize="13" Margin="10,3,0,0"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                </StackPanel>
+            </Button>
+            <StackPanel x:Name="Arrows" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource IconButton}" Click="Left_Click" ToolTip="Précédent">
+                    <TextBlock Text="&#xE76B;" Style="{StaticResource Icon}" FontSize="13" />
+                </Button>
+                <Button Style="{StaticResource IconButton}" Click="Right_Click" ToolTip="Suivant" Margin="4,0,0,0">
+                    <TextBlock Text="&#xE76C;" Style="{StaticResource Icon}" FontSize="13" />
+                </Button>
+            </StackPanel>
+        </Grid>
+        <ScrollViewer x:Name="Scroller" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+                      PreviewMouseWheel="Scroller_PreviewMouseWheel" Focusable="False">
+            <ItemsControl x:Name="ItemsHost" ItemTemplateSelector="{StaticResource TileSelector}" Margin="40,10,22,14" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+    </StackPanel>
+</UserControl>
