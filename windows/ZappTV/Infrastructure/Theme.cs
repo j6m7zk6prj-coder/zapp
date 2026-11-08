@@ -140,7 +140,7 @@ public sealed class ImageUrlConverter : IValueConverter
             if (decodeWidth > 0) image.DecodePixelWidth = decodeWidth;
             if (uri.IsFile)
             {
-                if (!File.Exists(uri.LocalPath)) return null;
+                if (!System.IO.File.Exists(uri.LocalPath)) return null;
                 // Charge tout de suite pour ne pas verrouiller le fichier.
                 image.CacheOption = BitmapCacheOption.OnLoad;
             }
