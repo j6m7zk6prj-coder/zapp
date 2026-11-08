@@ -62,7 +62,7 @@ git push -u origin main
 À chaque push sur `main`, GitHub Actions :
 
 1. génère le projet, compile et lance les tests sur un simulateur iPhone ;
-2. produit une **IPA non signée** (onglet *Actions* → dernier run → *Artifacts*).
+2. produit une **IPA non signée** et la publie dans une **Release** : télécharge-la directement sur `https://github.com/<ton-compte>/<dépôt>/releases/latest`.
 
 Sans Mac, cette IPA peut être installée sur ton iPhone avec un outil de sideloading (AltStore, Sideloadly…) qui la signe avec ton identifiant Apple.
 
