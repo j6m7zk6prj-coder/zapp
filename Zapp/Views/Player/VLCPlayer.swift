@@ -69,6 +69,15 @@ final class VLCPlayerModel {
         }
     }
 
+    /// Remplir l'écran (recadrage au format de l'écran) ou afficher toute l'image.
+    func setFill(_ fill: Bool, screen: CGSize) {
+        if fill, screen.width > 0, screen.height > 0 {
+            player.videoCropGeometry = strdup("\(Int(screen.width)):\(Int(screen.height))")
+        } else {
+            player.videoCropGeometry = nil
+        }
+    }
+
     // MARK: Enregistrement
 
     /// Démarre l'enregistrement du flux en cours (ou dès que la lecture commence).
@@ -199,6 +208,7 @@ final class VLCPlayerModel {
     private(set) var isRecording = false
     private(set) var recordingStartedAt: Date?
 
+    func setFill(_ fill: Bool, screen: CGSize) {}
     func startRecording(title: String) {}
     func stopRecording(completion: ((URL?) -> Void)? = nil) { completion?(nil) }
 

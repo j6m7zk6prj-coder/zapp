@@ -21,6 +21,9 @@ struct PlayerView: View {
     @State private var index: Int
     @State private var usingVLC = false
     @State private var showChannelList = false
+    @State private var chromeVisible = true
+    @State private var scrubbing: Double?
+    @State private var fill = false
 
     init(request: PlaybackRequest) {
         self.request = request
@@ -32,41 +35,80 @@ struct PlayerView: View {
     private var hasNextEpisode: Bool { !current.isLive && index < request.queue.count - 1 }
     private var ended: Bool { usingVLC ? vlc.ended : native.ended }
     private var activeError: String? { usingVLC ? vlc.error : native.error }
+    private var isPlaying: Bool { usingVLC ? vlc.isPlaying : native.isPlaying }
+    private var isBuffering: Bool { usingVLC ? vlc.isBuffering : native.isBuffering }
+    private var position: Double { usingVLC ? vlc.position : native.position }
+    private var durationMs: Int { usingVLC ? Int(vlc.durationMs) : native.durationMs }
+    private var timeText: String { usingVLC ? vlc.timeText : native.timeText }
+    private var remainingText: String { usingVLC ? vlc.remainingText : native.remainingText }
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
-            ZStack {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            // Vidéo en plein écran (bord à bord), sans les commandes d'iOS.
+            Group {
                 if usingVLC {
                     VLCSurface(model: vlc)
-                        .overlay { VLCControls(model: vlc, isLive: current.isLive) }
                 } else {
-                    SystemPlayer(player: native.player)
-                }
-                if let error = activeError {
-                    errorOverlay(error)
-                }
-                if let countdown, hasNextEpisode {
-                    nextEpisodeCard(countdown)
-                }
-                if let recordingNotice {
-                    VStack {
-                        Label(recordingNotice, systemImage: recordingNotice.hasPrefix("Enregistré") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .multilineTextAlignment(.center)
-                            .font(.footnote.weight(.semibold))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(.ultraThinMaterial, in: Capsule())
-                            .padding(.top, 12)
-                        Spacer()
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        withAnimation { self.recordingNotice = nil }
-                    }
+                    SystemPlayer(player: native.player, fill: fill)
                 }
             }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            // Zone de toucher : afficher / masquer les commandes, double-tap = remplir l'écran, pincer = zoom.
+            Color.black.opacity(chromeVisible ? 0.35 : 0.001)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture(count: 2) { toggleFill() }
+                .onTapGesture { withAnimation(.easeInOut(duration: 0.2)) { chromeVisible.toggle() } }
+                .gesture(MagnifyGesture().onEnded { value in
+                    let wantFill = value.magnification > 1
+                    if wantFill != fill { toggleFill() }
+                })
+
+            if isBuffering && activeError == nil {
+                ProgressView().controlSize(.large).tint(.white)
+            }
+
+            if chromeVisible {
+                chrome
+                    .transition(.opacity)
+            }
+
+            if let error = activeError {
+                errorOverlay(error)
+            }
+            if let countdown, hasNextEpisode {
+                nextEpisodeCard(countdown)
+            }
+            if let recordingNotice {
+                VStack {
+                    Label(recordingNotice, systemImage: recordingNotice.hasPrefix("Enregistré") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .multilineTextAlignment(.center)
+                        .font(.footnote.weight(.semibold))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .padding(.top, 60)
+                        .padding(.horizontal)
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .task {
+                    try? await Task.sleep(for: .seconds(4))
+                    withAnimation { self.recordingNotice = nil }
+                }
+            }
+        }
+        .statusBarHidden(!chromeVisible)
+        .task(id: chromeVisible) {
+            // Les commandes se masquent toutes seules pendant la lecture.
+            guard chromeVisible else { return }
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled, isPlaying, scrubbing == nil, activeError == nil else { return }
+            withAnimation(.easeInOut(duration: 0.3)) { chromeVisible = false }
         }
         .background(Color.black.ignoresSafeArea())
         .onAppear { start() }
@@ -280,6 +322,124 @@ struct PlayerView: View {
         index = (index + delta % count + count) % count
     }
 
+    // MARK: Commandes
+
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+
+    private var chrome: some View {
+        VStack(spacing: 0) {
+            topBar
+                .background(LinearGradient(colors: [.black.opacity(0.7), .clear], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+            Spacer()
+            centerControls
+            Spacer()
+            bottomBar
+                .background(LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+        }
+    }
+
+    private var centerControls: some View {
+        HStack(spacing: 50) {
+            if !current.isLive {
+                Button { jump(-10) } label: { Image(systemName: "gobackward.10") }
+                    .accessibilityLabel("Reculer de 10 secondes")
+            } else if canZap {
+                Button { zap(-1) } label: { Image(systemName: "backward.end.fill") }
+                    .accessibilityLabel("Chaîne précédente")
+            }
+            Button {
+                togglePause()
+            } label: {
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 40))
+                    .frame(width: 76, height: 76)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .accessibilityLabel(isPlaying ? "Pause" : "Lecture")
+            .opacity(isBuffering ? 0 : 1)
+            if !current.isLive {
+                Button { jump(10) } label: { Image(systemName: "goforward.10") }
+                    .accessibilityLabel("Avancer de 10 secondes")
+            } else if canZap {
+                Button { zap(1) } label: { Image(systemName: "forward.end.fill") }
+                    .accessibilityLabel("Chaîne suivante")
+            }
+        }
+        .font(.system(size: 28, weight: .semibold))
+        .foregroundStyle(.white)
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 10) {
+            if !current.isLive && durationMs > 0 {
+                Slider(
+                    value: Binding(get: { scrubbing ?? position }, set: { scrubbing = $0 }),
+                    in: 0...1,
+                    onEditingChanged: { editing in
+                        if !editing, let target = scrubbing {
+                            seek(to: target)
+                            scrubbing = nil
+                        }
+                    }
+                )
+                .tint(.white)
+            }
+            HStack(spacing: 18) {
+                if current.isLive {
+                    LivePill()
+                } else {
+                    Text(timeText).monospacedDigit()
+                }
+                Spacer()
+                if !current.isLive {
+                    Text(remainingText).monospacedDigit()
+                }
+                AirPlayButton()
+                    .frame(width: 30, height: 30)
+                Button { toggleFill() } label: {
+                    Image(systemName: fill ? "arrow.down.right.and.arrow.up.left.rectangle" : "arrow.up.left.and.arrow.down.right.rectangle")
+                }
+                .accessibilityLabel(fill ? "Afficher toute l'image" : "Remplir l'écran")
+                Button { rotate() } label: {
+                    Image(systemName: isLandscape ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                }
+                .accessibilityLabel(isLandscape ? "Quitter le plein écran" : "Plein écran")
+            }
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(.white)
+        }
+        .font(.caption.weight(.semibold))
+        .padding(.horizontal, 20)
+        .padding(.bottom, 12)
+        .padding(.top, 30)
+    }
+
+    private func togglePause() {
+        if usingVLC { vlc.togglePause() } else { native.togglePause() }
+    }
+
+    private func jump(_ seconds: Int32) {
+        if usingVLC { vlc.jump(seconds) } else { native.jump(Double(seconds)) }
+    }
+
+    private func seek(to value: Double) {
+        if usingVLC { vlc.seek(to: value) } else { native.seek(to: value) }
+    }
+
+    private func toggleFill() {
+        withAnimation(.easeInOut(duration: 0.25)) { fill.toggle() }
+        let size = UIScreen.main.bounds.size
+        vlc.setFill(fill, screen: CGSize(width: max(size.width, size.height), height: min(size.width, size.height)))
+    }
+
+    /// Plein écran = paysage (et retour en portrait).
+    private func rotate() {
+        guard let scene = UIApplication.shared.connectedScenes.first(where: { $0 is UIWindowScene }) as? UIWindowScene else { return }
+        let target: UIInterfaceOrientationMask = isLandscape ? .portrait : .landscapeRight
+        scene.requestGeometryUpdate(.iOS(interfaceOrientations: target)) { _ in }
+        scene.keyWindow?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+    }
+
     // MARK: Interface
 
     /// Barre du haut : sur une ligne en paysage, sur deux lignes en portrait (titre puis boutons).
@@ -385,9 +545,7 @@ struct PlayerView: View {
             zapButton("forward.end.fill", label: "Épisode suivant") { playNextEpisode() }
         }
         if canZap {
-            zapButton("chevron.up", label: "Chaîne précédente") { zap(-1) }
             zapButton("list.bullet", label: "Liste des chaînes") { showChannelList = true }
-            zapButton("chevron.down", label: "Chaîne suivante") { zap(1) }
         }
     }
 
@@ -434,20 +592,37 @@ struct PlayerView: View {
 /// Lecteur système (contrôles natifs, AirPlay, Picture in Picture).
 private struct SystemPlayer: UIViewControllerRepresentable {
     let player: AVPlayer
+    var fill = false
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
         controller.player = player
+        // Commandes d'iOS masquées : iTv affiche les siennes (pas de plein écran système qui bloque).
+        controller.showsPlaybackControls = false
         controller.allowsPictureInPicturePlayback = true
         controller.canStartPictureInPictureAutomaticallyFromInline = true
-        controller.entersFullScreenWhenPlaybackBegins = false
-        controller.videoGravity = .resizeAspect
+        controller.videoGravity = fill ? .resizeAspectFill : .resizeAspect
+        controller.view.backgroundColor = .black
         return controller
     }
 
     func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
         if controller.player !== player { controller.player = player }
+        controller.videoGravity = fill ? .resizeAspectFill : .resizeAspect
     }
+}
+
+/// Bouton AirPlay du système.
+private struct AirPlayButton: UIViewRepresentable {
+    func makeUIView(context: Context) -> AVRoutePickerView {
+        let view = AVRoutePickerView()
+        view.tintColor = .white
+        view.activeTintColor = .systemBlue
+        view.prioritizesVideoDevices = true
+        return view
+    }
+
+    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
 }
 
 @MainActor
@@ -456,8 +631,14 @@ final class NativePlayerModel {
     let player = AVPlayer()
     var error: String?
     var ended = false
+    private(set) var isPlaying = false
+    private(set) var isBuffering = false
+    private(set) var position: Double = 0
+    private(set) var timeText = "0:00"
+    private(set) var remainingText = ""
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
     @ObservationIgnored private var endObserver: NSObjectProtocol?
+    @ObservationIgnored private var timeObserver: Any?
 
     var currentMs: Int {
         let seconds = player.currentTime().seconds
@@ -472,11 +653,13 @@ final class NativePlayerModel {
     func play(_ url: URL, startMs: Int = 0) {
         error = nil
         ended = false
+        isBuffering = true
+        position = 0
         let item = AVPlayerItem(url: url)
         statusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
             if item.status == .readyToPlay, startMs > 0 {
                 Task { @MainActor in
-                    await self?.player.seek(to: CMTime(value: CMTimeValue(startMs), timescale: 1000))
+                    _ = await self?.player.seek(to: CMTime(value: CMTimeValue(startMs), timescale: 1000))
                 }
                 return
             }
@@ -488,97 +671,57 @@ final class NativePlayerModel {
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.ended = true }
         }
+        if timeObserver == nil {
+            timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 2), queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.refresh() }
+            }
+        }
         player.replaceCurrentItem(with: item)
         player.play()
+    }
+
+    func togglePause() {
+        if player.timeControlStatus == .paused { player.play() } else { player.pause() }
+        refresh()
+    }
+
+    func jump(_ seconds: Double) {
+        let target = player.currentTime().seconds + seconds
+        guard target.isFinite else { return }
+        player.seek(to: CMTime(seconds: max(0, target), preferredTimescale: 600))
+    }
+
+    func seek(to value: Double) {
+        guard let duration = player.currentItem?.duration.seconds, duration.isFinite else { return }
+        player.seek(to: CMTime(seconds: duration * min(max(value, 0), 1), preferredTimescale: 600))
+    }
+
+    private func refresh() {
+        isPlaying = player.timeControlStatus != .paused
+        isBuffering = player.timeControlStatus == .waitingToPlayAtSpecifiedRate && error == nil
+        let now = currentMs
+        let total = durationMs
+        position = total > 0 ? Double(now) / Double(total) : 0
+        timeText = Self.format(now)
+        remainingText = total > 0 ? "-" + Self.format(max(0, total - now)) : ""
+    }
+
+    private static func format(_ milliseconds: Int) -> String {
+        let total = milliseconds / 1000
+        let hours = total / 3600, minutes = (total % 3600) / 60, seconds = total % 60
+        return hours > 0 ? String(format: "%d:%02d:%02d", hours, minutes, seconds) : String(format: "%d:%02d", minutes, seconds)
     }
 
     func stop() {
         statusObservation = nil
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = nil
+        if let timeObserver { player.removeTimeObserver(timeObserver) }
+        timeObserver = nil
         player.pause()
         player.replaceCurrentItem(with: nil)
-    }
-}
-
-// MARK: - Contrôles VLC
-
-/// Contrôles affichés par-dessus VLC (qui n'a pas de contrôles natifs).
-private struct VLCControls: View {
-    let model: VLCPlayerModel
-    let isLive: Bool
-    @State private var visible = true
-    @State private var scrubbing: Double?
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(visible ? 0.35 : 0.001)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) { visible.toggle() }
-                }
-
-            if model.isBuffering && model.error == nil {
-                ProgressView()
-                    .controlSize(.large)
-                    .tint(.white)
-            }
-
-            if visible {
-                HStack(spacing: 46) {
-                    if !isLive {
-                        Button { model.jump(-10) } label: { Image(systemName: "gobackward.10") }
-                    }
-                    Button {
-                        model.togglePause()
-                    } label: {
-                        Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 38))
-                    }
-                    if !isLive {
-                        Button { model.jump(10) } label: { Image(systemName: "goforward.10") }
-                    }
-                }
-                .font(.system(size: 26, weight: .semibold))
-                .foregroundStyle(.white)
-                .opacity(model.isBuffering ? 0 : 1)
-
-                if !isLive && model.durationMs > 0 {
-                    VStack {
-                        Spacer()
-                        VStack(spacing: 6) {
-                            Slider(
-                                value: Binding(get: { scrubbing ?? model.position }, set: { scrubbing = $0 }),
-                                in: 0...1,
-                                onEditingChanged: { editing in
-                                    if !editing, let target = scrubbing {
-                                        model.seek(to: target)
-                                        scrubbing = nil
-                                    }
-                                }
-                            )
-                            .tint(.white)
-                            HStack {
-                                Text(model.timeText)
-                                Spacer()
-                                Text(model.remainingText)
-                            }
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white.opacity(0.8))
-                        }
-                        .padding(14)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .padding()
-                    }
-                }
-            }
-        }
-        .task(id: visible) {
-            guard visible else { return }
-            try? await Task.sleep(for: .seconds(4))
-            guard !Task.isCancelled, model.isPlaying, scrubbing == nil else { return }
-            withAnimation(.easeInOut(duration: 0.3)) { visible = false }
-        }
+        isPlaying = false
+        isBuffering = false
     }
 }
 
