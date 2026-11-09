@@ -47,11 +47,21 @@ jobs:
           Compress-Archive -Path out/ZappTV -DestinationPath ZappTV-Windows-x64.zip
           Get-Item ZappTV-Windows-x64.zip | Select-Object Name, Length
 
-      - uses: actions/upload-artifact@v4
+      # Un seul fichier ZappTV.exe qui contient tout (.NET + VLC), extrait au premier lancement.
+      - name: Compiler ZappTV.exe (fichier unique)
+        run: |
+          dotnet publish windows/ZappTV/ZappTV.csproj -c Release -r win-x64 --self-contained true \
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:IncludeAllContentForSelfExtract=true -p:EnableCompressionInSingleFile=true \
+            -p:DebugType=none -p:GenerateDocumentationFile=false -o out/single --nologo
+          ls -la out/single
+
+      - name: Zapp TV pour Windows (ZappTV.exe à lancer)
+        uses: actions/upload-artifact@v4
         with:
-          name: ZappTV-Windows-x64
-          path: ZappTV-Windows-x64.zip
-          retention-days: 14
+          name: ZappTV-Windows-exe
+          path: out/single/ZappTV.exe
+          retention-days: 30
 
       # Release « windows-latest » : lien de téléchargement fixe, mis à jour à chaque version.
       - name: Publier la Release
@@ -64,13 +74,14 @@ jobs:
           {
             echo "Zapp TV pour Windows ${VERSION} (build ${{ github.run_number }})"
             echo
-            echo "1. Télécharge **ZappTV-Windows-x64.zip** ci-dessous et dézippe-le."
-            echo "2. Lance **ZappTV.exe** dans le dossier ZappTV."
-            echo "3. Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*."
+            echo "- **ZappTV.exe** : un seul fichier, télécharge-le et double-clique (le premier lancement prend quelques secondes)."
+            echo "- **ZappTV-Windows-x64.zip** : même app en dossier, à dézipper puis lancer ZappTV.exe."
+            echo
+            echo "Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*."
             echo
             echo "Commit : ${GITHUB_SHA::7} — $(git log -1 --pretty=%s)"
           } > notes.md
-          gh release create windows-latest ZappTV-Windows-x64.zip \
+          gh release create windows-latest out/single/ZappTV.exe ZappTV-Windows-x64.zip \
             --title "Zapp TV pour Windows ${VERSION} (build ${{ github.run_number }})" \
             --notes-file notes.md \
             --target "$GITHUB_SHA" \
