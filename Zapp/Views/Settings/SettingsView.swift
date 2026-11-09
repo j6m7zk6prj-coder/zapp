@@ -47,6 +47,11 @@ struct SettingsView: View {
                                     value: "\(playlists.playlists.count)")
                     }
                     NavigationLink {
+                        RecordingsView()
+                    } label: {
+                        SettingsRow(icon: "record.circle", color: .red, title: "Enregistrements", value: nil)
+                    }
+                    NavigationLink {
                         HiddenItemsView()
                     } label: {
                         SettingsRow(icon: "eye.slash.fill", color: .gray, title: "Éléments masqués",

@@ -35,6 +35,9 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UIUserInterfaceStyle: Dark
+        # Enregistrements visibles dans l'app Fichiers (dossier « iTv »).
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
         UIBackgroundModes: [audio]
         ITSAppUsesNonExemptEncryption: false
         NSLocalNetworkUsageDescription: iTv lit les flux de ton réseau local (UDP, RTSP, multicast).

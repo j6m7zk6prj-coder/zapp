@@ -1,5 +1,6 @@
 import AVKit
 import SwiftUI
+import UIKit
 
 /// Lecteur plein écran. HLS/MP4 via le lecteur iOS, tout le reste via VLC,
 /// avec zapping (précédente / suivante / liste) pour le direct.
@@ -10,6 +11,9 @@ struct PlayerView: View {
     @Environment(AppSettings.self) private var settings
     @State private var countdown: Int?
     @State private var startedAt = Date()
+    @State private var recordingNotice: String?
+    @State private var showRecordInfo = false
+    @AppStorage("recordings.infoShown") private var recordInfoShown = false
     @State private var native = NativePlayerModel()
     @State private var vlc = VLCPlayerModel()
     @State private var index: Int
@@ -43,17 +47,44 @@ struct PlayerView: View {
                 if let countdown, hasNextEpisode {
                     nextEpisodeCard(countdown)
                 }
+                if let recordingNotice {
+                    VStack {
+                        Label(recordingNotice, systemImage: "checkmark.circle.fill")
+                            .font(.footnote.weight(.semibold))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(.ultraThinMaterial, in: Capsule())
+                            .padding(.top, 12)
+                        Spacer()
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(4))
+                        withAnimation { self.recordingNotice = nil }
+                    }
+                }
             }
         }
         .background(Color.black.ignoresSafeArea())
         .onAppear { start() }
         .onChange(of: index) { oldValue, _ in
             recordPosition(of: request.queue[oldValue])
+            finishRecording()
             start()
+        }
+        .alert("Enregistrer le flux", isPresented: $showRecordInfo) {
+            Button("Enregistrer") {
+                recordInfoShown = true
+                beginRecording()
+            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Le flux est copié tel quel, en pleine qualité, dans l'app Fichiers › iTv › Enregistrements. Compte 2 à 4 Go par heure en Full HD. Usage privé uniquement : pas de partage ni de diffusion.")
         }
         .onChange(of: native.error) { fallBackToVLCIfPossible() }
         .onChange(of: ended) { _, isEnded in
             guard isEnded else { return }
+            finishRecording()
             // Fin du film ou de l'épisode : il sort de « Reprendre la lecture ».
             if !current.isLive { profiles.removeHistory(current.id) }
             if hasNextEpisode && settings.autoPlayNext { countdown = 10 }
@@ -78,6 +109,7 @@ struct PlayerView: View {
         }
         .onDisappear {
             recordPosition(of: current)
+            finishRecording()
             native.stop()
             vlc.stop()
         }
@@ -124,6 +156,43 @@ struct PlayerView: View {
         let duration = usingVLC ? Int(vlc.durationMs) : native.durationMs
         guard position > 0, duration > 0, !ended else { return }
         profiles.record(playable, positionMs: position, durationMs: duration)
+    }
+
+    // MARK: Enregistrement
+
+    private var canRecord: Bool { PlaybackSupport.vlcAvailable && !current.url.isFileURL }
+
+    private func toggleRecording() {
+        if vlc.isRecording {
+            finishRecording()
+        } else if recordInfoShown {
+            beginRecording()
+        } else {
+            showRecordInfo = true
+        }
+    }
+
+    /// L'enregistrement passe par VLC : un flux lu par le lecteur iOS bascule sur VLC à la même position.
+    private func beginRecording() {
+        if !usingVLC {
+            let position = current.isLive ? 0 : native.currentMs
+            native.stop()
+            usingVLC = true
+            vlc.play(current.url, startMs: position)
+        }
+        vlc.startRecording(title: current.title)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+
+    private func finishRecording() {
+        guard vlc.isRecording else { return }
+        vlc.stopRecording { url in
+            withAnimation(.snappy) {
+                recordingNotice = url != nil
+                    ? "Enregistré dans Fichiers › iTv › Enregistrements"
+                    : "L'enregistrement n'a pas pu être sauvegardé"
+            }
+        }
     }
 
     private func playNextEpisode() {
@@ -233,6 +302,31 @@ struct PlayerView: View {
             }
 
             Spacer(minLength: 0)
+
+            if vlc.isRecording, let started = vlc.recordingStartedAt {
+                Button(action: toggleRecording) {
+                    HStack(spacing: 6) {
+                        Circle().fill(.white).frame(width: 7, height: 7)
+                        Text(timerInterval: started...Date.distantFuture, countsDown: false)
+                            .monospacedDigit()
+                    }
+                    .font(.caption.weight(.heavy))
+                    .padding(.horizontal, 10)
+                    .frame(height: 30)
+                    .background(Color(hex: 0xFF3B30), in: Capsule())
+                }
+                .accessibilityLabel("Arrêter l'enregistrement")
+            } else if canRecord {
+                Button(action: toggleRecording) {
+                    ZStack {
+                        Circle().strokeBorder(.white, lineWidth: 2).frame(width: 20, height: 20)
+                        Circle().fill(Color(hex: 0xFF3B30)).frame(width: 10, height: 10)
+                    }
+                    .frame(width: 38, height: 38)
+                    .background(.white.opacity(0.14), in: Circle())
+                }
+                .accessibilityLabel("Enregistrer le flux")
+            }
 
             if hasNextEpisode {
                 zapButton("forward.end.fill", label: "Épisode suivant") { playNextEpisode() }

@@ -18,14 +18,21 @@ final class VLCPlayerModel {
     private(set) var remainingText = ""
     private(set) var ended = false
     private(set) var currentMs: Int32 = 0
+    /// Enregistrement en cours (copie du flux, sans réencodage).
+    private(set) var isRecording = false
+    private(set) var recordingStartedAt: Date?
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var startedAt = Date()
+    @ObservationIgnored private var recordingFolder: URL?
+    @ObservationIgnored private var recordingTitle = ""
+    @ObservationIgnored private var recordingPending = false
 
     func attach(_ view: UIView) {
         player.drawable = view
     }
 
     func play(_ url: URL, startMs: Int = 0) {
+        if isRecording { stopRecording() }
         error = nil
         ended = false
         isBuffering = true
@@ -62,7 +69,42 @@ final class VLCPlayerModel {
         }
     }
 
+    // MARK: Enregistrement
+
+    /// Démarre l'enregistrement du flux en cours (ou dès que la lecture commence).
+    func startRecording(title: String) {
+        guard !isRecording else { return }
+        let folder = Recordings.temporaryFolder()
+        recordingFolder = folder
+        recordingTitle = title
+        isRecording = true
+        recordingStartedAt = Date()
+        if player.isPlaying {
+            recordingPending = !player.startRecording(atPath: folder.path)
+        } else {
+            recordingPending = true
+        }
+    }
+
+    /// Arrête l'enregistrement tout de suite, puis range le fichier dans « Enregistrements ».
+    func stopRecording(completion: ((URL?) -> Void)? = nil) {
+        guard isRecording, let folder = recordingFolder else { return }
+        if !recordingPending { _ = player.stopRecording() }
+        let title = recordingTitle
+        isRecording = false
+        recordingStartedAt = nil
+        recordingPending = false
+        recordingFolder = nil
+        Task { @MainActor in
+            // VLC finalise le fichier juste après l'arrêt.
+            try? await Task.sleep(for: .milliseconds(900))
+            let url = await Task.detached { Recordings.finalize(folder: folder, title: title) }.value
+            completion?(url)
+        }
+    }
+
     func stop() {
+        stopRecording()
         timer?.invalidate()
         timer = nil
         if player.media != nil { player.stop() }
@@ -97,6 +139,9 @@ final class VLCPlayerModel {
             }
         default:
             isBuffering = false
+        }
+        if isRecording, recordingPending, player.isPlaying, let folder = recordingFolder {
+            recordingPending = !player.startRecording(atPath: folder.path)
         }
 
         durationMs = Self.milliseconds(player.media?.length)
@@ -151,6 +196,11 @@ final class VLCPlayerModel {
     private(set) var remainingText = ""
     private(set) var ended = false
     private(set) var currentMs: Int32 = 0
+    private(set) var isRecording = false
+    private(set) var recordingStartedAt: Date?
+
+    func startRecording(title: String) {}
+    func stopRecording(completion: ((URL?) -> Void)? = nil) { completion?(nil) }
 
     func play(_ url: URL, startMs: Int = 0) {
         error = "Le moteur VLC n'est pas intégré à cette version de l'app (lance « pod install »)."

@@ -164,10 +164,10 @@ struct ChannelPickerView: View {
     @Environment(Library.self) private var library
     @Environment(ProfileStore.self) private var profiles
     @Environment(AppSettings.self) private var settings
-    @Environment(Router.self) private var router
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var keywords = ""
+    @State private var playing: PlaybackRequest?
 
     var body: some View {
         NavigationStack {
@@ -214,7 +214,9 @@ struct ChannelPickerView: View {
                             .accessibilityLabel(pinned ? "Désépingler" : "Épingler")
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture { router.play(channel, context: [channel]) }
+                        .onTapGesture {
+                            if let playable = channel.playable { playing = PlaybackRequest(queue: [playable], index: 0) }
+                        }
                     }
                 }
             }
@@ -232,6 +234,7 @@ struct ChannelPickerView: View {
                 }
             }
             .onAppear { keywords = settings.broadcasterKeywords(slug) }
+            .fullScreenCover(item: $playing) { request in PlayerView(request: request) }
         }
     }
 
