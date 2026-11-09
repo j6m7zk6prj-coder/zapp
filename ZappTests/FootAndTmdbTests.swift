@@ -2,8 +2,8 @@ import XCTest
 @testable import Zapp
 
 final class EspnParsingTests: XCTestCase {
-    private func json(_ text: String) throws -> JSONValue {
-        try JSONValue(data: Data(text.utf8))
+    private func json(_ text: String) throws -> JSONNode {
+        try JSONNode(data: Data(text.utf8))
     }
 
     func testParsesScoreboard() throws {
@@ -169,13 +169,13 @@ final class TmdbTests: XCTestCase {
     }
 
     func testSearchPrefersExactTitle() throws {
-        let root = try JSONValue(data: Data(#"{"results":[{"id":1,"title":"Avatar : La voie de l'eau"},{"id":19995,"title":"Avatar"}]}"#.utf8))
+        let root = try JSONNode(data: Data(#"{"results":[{"id":1,"title":"Avatar : La voie de l'eau"},{"id":19995,"title":"Avatar"}]}"#.utf8))
         XCTAssertEqual(TmdbClient.parseSearch(root, title: "Avatar"), 19995)
         XCTAssertEqual(TmdbClient.parseSearch(root, title: "Autre"), 1)
     }
 
     func testParsesMovieDetails() throws {
-        let root = try JSONValue(data: Data("""
+        let root = try JSONNode(data: Data("""
         {"id":19995,"title":"Avatar","original_title":"Avatar","release_date":"2009-12-15","vote_average":7.588,"vote_count":32000,
          "overview":"Malgré sa paralysie…","tagline":"Entrez dans le monde de Pandora.","runtime":162,
          "poster_path":"/p.jpg","backdrop_path":"/b.jpg","genres":[{"id":28,"name":"Action"},{"id":12,"name":"Aventure"}],
@@ -199,7 +199,7 @@ final class TmdbTests: XCTestCase {
     }
 
     func testParsesTrendingAndSkipsPeople() throws {
-        let root = try JSONValue(data: Data("""
+        let root = try JSONNode(data: Data("""
         {"results":[{"id":1,"media_type":"movie","title":"Film","release_date":"2026-10-01","backdrop_path":"/a.jpg","vote_average":7.2},
                     {"id":2,"media_type":"person","name":"Quelqu'un"},
                     {"id":3,"media_type":"tv","name":"Série","first_air_date":"2025-05-05"}]}

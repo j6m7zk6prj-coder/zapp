@@ -1,7 +1,7 @@
 import Foundation
 
 /// Accès tolérant à un JSON décodé avec JSONSerialization.
-struct JSONValue: @unchecked Sendable {
+struct JSONNode: @unchecked Sendable {
     let raw: Any?
 
     init(_ raw: Any?) { self.raw = raw }
@@ -10,16 +10,16 @@ struct JSONValue: @unchecked Sendable {
         raw = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
     }
 
-    subscript(key: String) -> JSONValue {
-        JSONValue((raw as? [String: Any])?[key])
+    subscript(key: String) -> JSONNode {
+        JSONNode((raw as? [String: Any])?[key])
     }
 
-    subscript(index: Int) -> JSONValue {
-        guard let array = raw as? [Any], array.indices.contains(index) else { return JSONValue(nil) }
-        return JSONValue(array[index])
+    subscript(index: Int) -> JSONNode {
+        guard let array = raw as? [Any], array.indices.contains(index) else { return JSONNode(nil) }
+        return JSONNode(array[index])
     }
 
-    var array: [JSONValue] { (raw as? [Any])?.map(JSONValue.init) ?? [] }
+    var array: [JSONNode] { (raw as? [Any])?.map(JSONNode.init) ?? [] }
     var isObject: Bool { raw is [String: Any] }
     var isNull: Bool { raw == nil || raw is NSNull }
 
@@ -53,7 +53,7 @@ struct JSONValue: @unchecked Sendable {
 
     var date: Date? {
         guard let text = string else { return nil }
-        return JSONValue.parseDate(text)
+        return JSONNode.parseDate(text)
     }
 
     static func parseDate(_ text: String) -> Date? {
@@ -90,7 +90,7 @@ actor EspnClient {
 
     private let site = "https://site.api.espn.com/apis/site/v2/sports/soccer"
     private let standingsAPI = "https://site.api.espn.com/apis/v2/sports/soccer"
-    private var cache: [String: (at: Date, value: JSONValue)] = [:]
+    private var cache: [String: (at: Date, value: JSONNode)] = [:]
 
     /// Matchs d'une ligue pour un jour local (ESPN raisonne en heure de New York : on prend la veille aussi).
     func day(_ slug: String, _ day: Date) async throws -> [Match] {
@@ -148,7 +148,7 @@ actor EspnClient {
         return day < Date() ? 1800 : 600
     }
 
-    private func get(_ url: String, maxAge: TimeInterval) async throws -> JSONValue {
+    private func get(_ url: String, maxAge: TimeInterval) async throws -> JSONNode {
         if let hit = cache[url], Date().timeIntervalSince(hit.at) < maxAge { return hit.value }
         guard let endpoint = URL(string: url) else { throw FootError.unavailable(0) }
         var request = URLRequest(url: endpoint)
@@ -156,7 +156,7 @@ actor EspnClient {
         let (data, response) = try await URLSession.shared.data(for: request)
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(code) else { throw FootError.unavailable(code) }
-        let value = try JSONValue(data: data)
+        let value = try JSONNode(data: data)
         cache[url] = (Date(), value)
         return value
     }
@@ -170,14 +170,14 @@ actor EspnClient {
 
     // MARK: Analyse (statique pour les tests)
 
-    static func parseScoreboard(_ root: JSONValue, slug: String) -> [Match] {
+    static func parseScoreboard(_ root: JSONNode, slug: String) -> [Match] {
         let league = root["leagues"][0]
         let leagueName = LeagueCatalog.name(of: slug, fallback: league["name"].string)
         LeagueCatalog.rememberLogo(slug, league["logos"][0]["href"].url)
         return root["events"].array.compactMap { parseEvent($0, slug: slug, leagueName: leagueName) }
     }
 
-    static func parseSchedule(_ root: JSONValue) -> [Match] {
+    static func parseSchedule(_ root: JSONNode) -> [Match] {
         root["events"].array.compactMap { event -> Match? in
             let league = event["league"]
             let slug = league["slug"].string ?? "all"
@@ -187,11 +187,11 @@ actor EspnClient {
         .sorted { $0.date < $1.date }
     }
 
-    static func parseEvent(_ event: JSONValue, slug: String, leagueName: String) -> Match? {
+    static func parseEvent(_ event: JSONNode, slug: String, leagueName: String) -> Match? {
         guard let id = event["id"].text else { return nil }
         let competition = event["competitions"][0]
         guard competition.isObject else { return nil }
-        var home = JSONValue(nil), away = JSONValue(nil)
+        var home = JSONNode(nil), away = JSONNode(nil)
         for competitor in competition["competitors"].array {
             if competitor["homeAway"].string == "home" { home = competitor } else { away = competitor }
         }
@@ -233,7 +233,7 @@ actor EspnClient {
         )
     }
 
-    static func parseSummary(_ root: JSONValue, slug: String) -> MatchDetail? {
+    static func parseSummary(_ root: JSONNode, slug: String) -> MatchDetail? {
         let header = root["header"]
         let leagueSlug = header["league"]["slug"].string ?? slug
         let leagueName = LeagueCatalog.name(of: leagueSlug, fallback: header["league"]["name"].string)
@@ -314,7 +314,7 @@ actor EspnClient {
         return MatchDetail(match: match, stats: stats, events: events, lineups: lineups, standings: standings, attendance: attendance)
     }
 
-    static func parseStandings(_ root: JSONValue) -> LeagueTable {
+    static func parseStandings(_ root: JSONNode) -> LeagueTable {
         let groups = root["children"].array.compactMap { child -> StandingGroup? in
             let rows = parseEntries(child["standings"]["entries"])
             return rows.isEmpty ? nil : StandingGroup(name: child["name"].string ?? "", rows: rows)
@@ -322,7 +322,7 @@ actor EspnClient {
         return LeagueTable(title: root["name"].string ?? "Classement", groups: groups)
     }
 
-    private static func parseEntries(_ entries: JSONValue) -> [StandingRow] {
+    private static func parseEntries(_ entries: JSONNode) -> [StandingRow] {
         var rows: [StandingRow] = []
         for entry in entries.array {
             let team = entry["team"]
@@ -358,7 +358,7 @@ actor EspnClient {
         return rows.sorted { $0.rank < $1.rank }
     }
 
-    static func parseTeam(_ team: JSONValue) -> TeamRef? {
+    static func parseTeam(_ team: JSONNode) -> TeamRef? {
         guard let id = team["id"].text else { return nil }
         let name = team["displayName"].string ?? team["name"].string ?? id
         return TeamRef(
@@ -371,7 +371,7 @@ actor EspnClient {
         )
     }
 
-    private static func parseStatus(_ status: JSONValue) -> (MatchState, String, String?) {
+    private static func parseStatus(_ status: JSONNode) -> (MatchState, String, String?) {
         let type = status["type"]
         let name = type["name"].string ?? ""
         var detail = type["shortDetail"].string ?? type["detail"].string ?? ""
@@ -387,7 +387,7 @@ actor EspnClient {
         return (state, detail, state == .live && detail != "HT" ? clock : nil)
     }
 
-    private static func score(_ competitor: JSONValue) -> String? {
+    private static func score(_ competitor: JSONNode) -> String? {
         let score = competitor["score"]
         return score.text ?? score["displayValue"].string
     }

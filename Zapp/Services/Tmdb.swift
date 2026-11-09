@@ -227,7 +227,7 @@ actor TmdbClient {
         }
     }
 
-    private func get(_ pathAndQuery: String) async throws -> JSONValue {
+    private func get(_ pathAndQuery: String) async throws -> JSONNode {
         var url = "https://api.themoviedb.org/3" + pathAndQuery
         if !isBearer { url += (url.contains("?") ? "&" : "?") + "api_key=" + Self.escape(key) }
         guard let endpoint = URL(string: url) else { throw TmdbError.unavailable(0) }
@@ -239,7 +239,7 @@ actor TmdbClient {
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         if code == 401 { throw TmdbError.badKey }
         guard (200..<300).contains(code) else { throw TmdbError.unavailable(code) }
-        return try JSONValue(data: data)
+        return try JSONNode(data: data)
     }
 
     private static func escape(_ text: String) -> String {
@@ -256,7 +256,7 @@ actor TmdbClient {
     }
 
     /// Meilleur résultat : titre identique en priorité, sinon le premier.
-    static func parseSearch(_ root: JSONValue, title: String) -> Int? {
+    static func parseSearch(_ root: JSONNode, title: String) -> Int? {
         let wanted = TitleCleaner.key(title)
         var first: Int?
         for result in root["results"].array {
@@ -268,7 +268,7 @@ actor TmdbClient {
         return first
     }
 
-    static func parseDetails(_ root: JSONValue, kind: TmdbKind) -> TmdbInfo {
+    static func parseDetails(_ root: JSONNode, kind: TmdbKind) -> TmdbInfo {
         let title = root[kind == .movie ? "title" : "name"].string ?? ""
         let original = root[kind == .movie ? "original_title" : "original_name"].string
         let date = root[kind == .movie ? "release_date" : "first_air_date"].string
@@ -292,7 +292,7 @@ actor TmdbClient {
             return a["official"].bool && !b["official"].bool
         }.first?["key"].string
 
-        func languageRank(_ value: JSONValue) -> Int {
+        func languageRank(_ value: JSONNode) -> Int {
             switch value["iso_639_1"].string {
             case "fr": return 0
             case "en": return 1
@@ -330,7 +330,7 @@ actor TmdbClient {
         )
     }
 
-    static func parseTrending(_ root: JSONValue) -> [TmdbTrend] {
+    static func parseTrending(_ root: JSONNode) -> [TmdbTrend] {
         root["results"].array.compactMap { result in
             guard let type = result["media_type"].string, type == "movie" || type == "tv" else { return nil }
             let kind: TmdbKind = type == "movie" ? .movie : .tv
