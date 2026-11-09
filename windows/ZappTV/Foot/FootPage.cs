@@ -166,7 +166,7 @@ public sealed class FootPage : UserControl
         manage.Click += (_, _) => new FootFollowWindow().ShowDialog();
         DockPanel.SetDock(manage, Dock.Right);
         top.Children.Add(manage);
-        top.Children.Add(Text("Foot", 36, FontWeights.Black));
+        top.Children.Add(ZappTV.Pages.UiFactory.AccentTitle("Le foot, ", "en direct."));
         panel.Children.Add(top);
 
         var tabs = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 16, 0, 4) };

@@ -1,13 +1,13 @@
-# iTv (iPhone) & Lumio (Windows) — lecteurs IPTV
+# iTv — lecteur IPTV pour iPhone et Windows
 
 Lecteur IPTV moderne façon Apple TV : chaînes en direct avec zapping, films, séries, recherche, favoris, liens ajoutés un par un et thème personnalisable.
 
 | Plateforme | Technologie | Télécharger |
 |---|---|---|
 | iPhone / iPad | SwiftUI + VLC | [Dernière IPA **iTv**](../../releases/latest) (à installer avec Sideloadly / AltStore) |
-| Windows 10 / 11 | C# WPF + VLC | [Lumio.exe](../../releases/download/windows-latest/Lumio.exe) ou la branche [`app-windows`](../../tree/app-windows) (sur PC l'app s'appelle désormais **Lumio**) |
+| Windows 10 / 11 | C# WPF + VLC | [iTv.exe](../../releases/download/windows-latest/iTv.exe) ou la branche [`app-windows`](../../tree/app-windows) (même interface que sur iPhone) |
 
-> iTv et Lumio sont **uniquement des lecteurs**. Il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des playlists auxquelles tu as légalement accès.
+> iTv est **uniquement un lecteur**. Il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des playlists auxquelles tu as légalement accès.
 
 ## Fonctionnalités
 

@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <AssemblyName>Lumio</AssemblyName>
+    <AssemblyName>iTv</AssemblyName>
     <RootNamespace>ZappTV</RootNamespace>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>

@@ -15,13 +15,15 @@ public partial class App : Application
 
         LibVLCSharp.Shared.Core.Initialize();
         Services.Initialize();
-        if (Services.Settings.Data.ThemeVersion < 2)
+        if (Services.Settings.Data.ThemeVersion < 3)
         {
-            // Passage à Lumio : l'ancien bleu par défaut devient le violet Lumio.
+            // Passage à iTv : fond noir, violet iTv, accueil réduit à l'essentiel.
             Services.Settings.Update(s =>
             {
-                if (s.Accent == 0x4F6BFF) s.Accent = AppSettingsData.DefaultAccent;
-                s.ThemeVersion = 2;
+                if (s.Accent is 0x4F6BFF or 0x7C5CFF) s.Accent = AppSettingsData.DefaultAccent;
+                if (s.Background == BackgroundStyle.Night) s.Background = BackgroundStyle.Oled;
+                s.HomeSections = [];
+                s.ThemeVersion = 3;
             }, notify: false);
         }
         ThemeManager.Apply(Services.Settings.Data);
@@ -42,7 +44,7 @@ public partial class App : Application
     {
         MessageBox.Show(
             $"Une erreur inattendue s'est produite :\n\n{e.Exception.Message}",
-            "Lumio", MessageBoxButton.OK, MessageBoxImage.Warning);
+            "iTv", MessageBoxButton.OK, MessageBoxImage.Warning);
         e.Handled = true;
     }
 }

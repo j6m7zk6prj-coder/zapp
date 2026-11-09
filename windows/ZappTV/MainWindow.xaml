@@ -1,7 +1,7 @@
 <Window x:Class="ZappTV.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Lumio" Width="1400" Height="860" MinWidth="980" MinHeight="620"
+        Title="iTv" Width="1400" Height="860" MinWidth="980" MinHeight="620"
         WindowStartupLocation="CenterScreen" Icon="/Assets/app.ico"
         Background="{DynamicResource BgBrush}" Foreground="White" FontFamily="{StaticResource UiFont}"
         AllowDrop="True" Drop="Window_Drop" PreviewKeyDown="Window_PreviewKeyDown" PreviewMouseDown="Window_PreviewMouseDown">
@@ -28,7 +28,7 @@
                     <Button Style="{StaticResource PlainButton}" Click="Logo_Click" ToolTip="Accueil">
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/Assets/logo.png" Width="32" Height="32" RenderOptions.BitmapScalingMode="HighQuality" />
-                            <TextBlock Text="lumio" FontFamily="{StaticResource DisplayFont}" FontSize="23" FontWeight="SemiBold" Margin="10,0,0,2" VerticalAlignment="Center" />
+                            <TextBlock Text="iTv" FontFamily="{StaticResource DisplayFont}" FontSize="23" FontWeight="SemiBold" Margin="10,0,0,2" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

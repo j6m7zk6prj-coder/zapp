@@ -239,7 +239,7 @@ public partial class SettingsPage
             Choices<int>("Mémoire tampon réseau", "Plus elle est grande, moins ça coupe, mais le direct a plus de retard.",
                 [(800, "Faible"), (1500, "Normale"), (3000, "Grande"), (6000, "Très grande")],
                 Data.NetworkCacheMs, (s, v) => s.NetworkCacheMs = v),
-            Row("Enregistrements", "Bouton ⏺ ou touche R dans le lecteur. Fichiers .ts dans Vidéos\\Lumio. Usage privé uniquement.",
+            Row("Enregistrements", "Bouton ⏺ ou touche R dans le lecteur. Fichiers .ts dans Vidéos\\iTv. Usage privé uniquement.",
                 ActionButton("Ouvrir le dossier", OpenRecordings))));
     }
 

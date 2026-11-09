@@ -169,7 +169,7 @@ public static class AppearanceExtensions
     public static string Title(this BackgroundStyle style) => style switch
     {
         BackgroundStyle.Night => "Nuit",
-        BackgroundStyle.Oled => "Noir OLED",
+        BackgroundStyle.Oled => "Noir",
         BackgroundStyle.Graphite => "Graphite",
         BackgroundStyle.Ocean => "Océan",
         _ => "Prune",
@@ -179,7 +179,7 @@ public static class AppearanceExtensions
     public static (uint Base, uint Surface, uint SurfaceHigh, uint Glow) Palette(this BackgroundStyle style) => style switch
     {
         BackgroundStyle.Night => (0x07070C, 0x121220, 0x1C1C2E, 0x2A1858),
-        BackgroundStyle.Oled => (0x000000, 0x111113, 0x1C1C1F, 0x0B0B0D),
+        BackgroundStyle.Oled => (0x000000, 0x141416, 0x1E1E22, 0x2A2160),
         BackgroundStyle.Graphite => (0x141518, 0x202126, 0x2C2E35, 0x26282F),
         BackgroundStyle.Ocean => (0x05161F, 0x0C2430, 0x143443, 0x0B3A4E),
         _ => (0x130A1C, 0x21132D, 0x2F1C40, 0x2E1248),
@@ -205,10 +205,10 @@ public static class AppearanceExtensions
 
 public sealed class AppSettingsData
 {
-    public const uint DefaultAccent = 0x7C5CFF;
+    public const uint DefaultAccent = 0x8B7CFF;
 
     public uint Accent { get; set; } = DefaultAccent;
-    public BackgroundStyle Background { get; set; } = BackgroundStyle.Night;
+    public BackgroundStyle Background { get; set; } = BackgroundStyle.Oled;
     public PosterSize PosterSize { get; set; } = PosterSize.Regular;
     public LiveLayout LiveLayout { get; set; } = LiveLayout.Grid;
     public double Volume { get; set; } = 80;
@@ -233,7 +233,7 @@ public sealed class AppSettingsData
     public bool PlayerStartsFullscreen { get; set; }
     public bool AutoPlayNext { get; set; } = true;
 
-    /// <summary>Version du thème : passage au style Lumio pour les anciens réglages.</summary>
+    /// <summary>Version du thème : passage au style iTv pour les anciens réglages.</summary>
     public int ThemeVersion { get; set; }
 
     // Fiches films et séries
@@ -264,7 +264,7 @@ public sealed class AppSettingsData
 
     public static readonly (string Name, uint Hex)[] AccentPresets =
     [
-        ("Lumio", 0x7C5CFF), ("Bleu", 0x4F6BFF), ("Indigo", 0x5B5BF0), ("Violet", 0xA65CF6), ("Rose", 0xF0458A),
+        ("iTv", 0x8B7CFF), ("Bleu", 0x4F6BFF), ("Indigo", 0x5B5BF0), ("Violet", 0xA65CF6), ("Rose", 0xF0458A),
         ("Rouge", 0xF2414B), ("Orange", 0xFF8A1F), ("Jaune", 0xF5C518), ("Vert", 0x2FCB6B),
         ("Turquoise", 0x19C3C3), ("Blanc", 0xEDEDF2),
     ];
@@ -280,18 +280,18 @@ public static class HomeSectionCatalog
 {
     public static readonly IReadOnlyList<(string Key, string Title, bool DefaultVisible)> All =
     [
-        ("hero", "Bannière à la une", true),
-        ("trending", "Tendances dans ta playlist", true),
+        ("hero", "À la une", true),
         ("continue", "Reprendre la lecture", true),
-        ("foot", "Matchs à suivre", true),
-        ("results", "Derniers résultats", true),
-        ("favorites", "Mes favoris", true),
-        ("recent", "Chaînes récentes", true),
+        ("foot", "Matchs de tes équipes", true),
         ("links", "Mes liens", true),
-        ("live", "En direct", true),
-        ("categories", "Catégories", true),
-        ("movies", "Films récents", true),
-        ("series", "Séries récentes", true),
+        ("favorites", "Ma liste", true),
+        ("recent", "Regardées récemment", true),
+        ("results", "Derniers résultats", true),
+        ("trending", "Tendances dans ta playlist", false),
+        ("live", "En direct", false),
+        ("categories", "Catégories", false),
+        ("movies", "Films récents", false),
+        ("series", "Séries récentes", false),
     ];
 
     public static string TitleOf(string key) => All.FirstOrDefault(s => s.Key == key).Title ?? key;

@@ -35,14 +35,19 @@ public static class ThemeManager
             (byte)((accent.R + 255 * 2) / 3), (byte)((accent.G + 255 * 2) / 3), (byte)((accent.B + 255 * 2) / 3))));
         resources["TopBarBrush"] = Frozen(new SolidColorBrush(Color.FromArgb(0xF2, bg.R, bg.G, bg.B)));
 
-        resources["BackdropBrush"] = Frozen(new RadialGradientBrush(
-            [new GradientStop(glow, 0), new GradientStop(Color.FromArgb(0x80, glow.R, glow.G, glow.B), 0.35), new GradientStop(bg, 1)])
-        {
-            Center = new Point(0.15, 0),
-            GradientOrigin = new Point(0.15, 0),
-            RadiusX = 0.9,
-            RadiusY = 0.75,
-        });
+        // Fond iTv : noir profond, lueur colorée en haut à gauche et lueur chaude en bas à droite.
+        var glowLayer = new RadialGradientBrush(
+            [new GradientStop(Color.FromArgb(0x70, glow.R, glow.G, glow.B), 0), new GradientStop(Color.FromArgb(0, glow.R, glow.G, glow.B), 1)])
+        { Center = new Point(0.12, 0), GradientOrigin = new Point(0.12, 0), RadiusX = 0.75, RadiusY = 0.85 };
+        var warmLayer = new RadialGradientBrush(
+            [new GradientStop(Color.FromArgb(0x26, 0xFF, 0x8A, 0x4C), 0), new GradientStop(Color.FromArgb(0, 0xFF, 0x8A, 0x4C), 1)])
+        { Center = new Point(0.95, 1), GradientOrigin = new Point(0.95, 1), RadiusX = 0.7, RadiusY = 0.8 };
+        var drawing = new DrawingGroup();
+        var rect = new RectangleGeometry(new Rect(0, 0, 1, 1));
+        drawing.Children.Add(new GeometryDrawing(new SolidColorBrush(bg), null, rect));
+        drawing.Children.Add(new GeometryDrawing(glowLayer, null, rect));
+        drawing.Children.Add(new GeometryDrawing(warmLayer, null, rect));
+        resources["BackdropBrush"] = Frozen(new DrawingBrush(drawing) { Stretch = Stretch.Fill });
         resources["FadeBottomBrush"] = Frozen(new LinearGradientBrush(
             [new GradientStop(Color.FromArgb(0, bg.R, bg.G, bg.B), 0), new GradientStop(Color.FromArgb(200, bg.R, bg.G, bg.B), 0.6), new GradientStop(bg, 1)],
             new Point(0, 0), new Point(0, 1)));

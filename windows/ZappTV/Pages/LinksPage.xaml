@@ -69,7 +69,7 @@
                 </Button>
             </StackPanel>
             <StackPanel>
-                <TextBlock Text="Mes liens" Style="{StaticResource PageTitle}" />
+                <TextBlock x:Name="LinksTitle" Style="{StaticResource PageTitle}" />
                 <TextBlock Style="{StaticResource Caption}" Margin="2,4,0,0"
                            Text="Tes flux ajoutés un par un : HLS, MP4, TS, MKV, RTMP, RTSP, UDP, SRT… tout est lu par VLC." />
             </StackPanel>

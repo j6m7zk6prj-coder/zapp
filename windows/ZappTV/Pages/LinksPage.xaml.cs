@@ -21,6 +21,7 @@ public partial class LinksPage : UserControl
     public LinksPage()
     {
         InitializeComponent();
+        UiFactory.SetAccentTitle(LinksTitle, "Mes liens, ", "à portée de main.");
         Loaded += (_, _) =>
         {
             Services.Customization.Changed += Refresh;
@@ -72,7 +73,7 @@ public partial class LinksPage : UserControl
     private void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (LinkOf(sender) is not { } link) return;
-        var answer = MessageBox.Show(Window.GetWindow(this)!, $"Supprimer « {link.Name} » ?", "Lumio",
+        var answer = MessageBox.Show(Window.GetWindow(this)!, $"Supprimer « {link.Name} » ?", "iTv",
             MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (answer == MessageBoxResult.Yes) Services.Customization.DeleteLink(link);
     }

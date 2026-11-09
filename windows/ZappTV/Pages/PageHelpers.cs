@@ -49,6 +49,29 @@ public static class PageRefresh
 
 public static class UiFactory
 {
+    /// Titre de page façon iTv : « La télé, *en direct.* » (le second morceau en italique).
+    public static void SetAccentTitle(TextBlock block, string plain, string accent, double size = 38)
+    {
+        block.Inlines.Clear();
+        block.FontSize = size;
+        block.FontWeight = FontWeights.Bold;
+        block.FontFamily = (FontFamily)Application.Current.FindResource("DisplayFont");
+        block.Inlines.Add(new System.Windows.Documents.Run(plain));
+        block.Inlines.Add(new System.Windows.Documents.Run(accent)
+        {
+            FontFamily = (FontFamily)Application.Current.FindResource("DisplaySerif"),
+            FontStyle = FontStyles.Italic,
+            FontWeight = FontWeights.Normal,
+        });
+    }
+
+    public static TextBlock AccentTitle(string plain, string accent, double size = 38)
+    {
+        var block = new TextBlock();
+        SetAccentTitle(block, plain, accent, size);
+        return block;
+    }
+
     public static TextBlock Icon(string glyph, double size = 15) => new()
     {
         Text = glyph,

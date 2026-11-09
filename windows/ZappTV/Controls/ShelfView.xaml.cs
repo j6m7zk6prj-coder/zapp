@@ -41,7 +41,8 @@ public partial class ShelfView : UserControl
 
     private void Title_Click(object sender, RoutedEventArgs e)
     {
-        if (_route != null) MainWindow.Instance.Push(new BrowsePage(_route));
+        if (_route == BrowseRoute.CustomLinks) MainWindow.Instance.ShowSection("links");
+        else if (_route != null) MainWindow.Instance.Push(new BrowsePage(_route));
     }
 
     private void Left_Click(object sender, RoutedEventArgs e) =>

@@ -91,15 +91,15 @@ public partial class HomePage : UserControl
                 var resume = Services.Profiles.ContinueWatching();
                 return resume.Count > 0 ? ContinueShelf(resume) : null;
             case "foot":
-                return FootShelf("Matchs à suivre", _upcoming, "Aucun match aujourd'hui ni demain dans tes compétitions.");
+                return FootShelf(Services.Profiles.Current.Teams.Count > 0 ? "Tes équipes, ce soir" : "Pour toi ce soir", _upcoming, "Aucun match aujourd'hui ni demain pour tes équipes et tes compétitions.");
             case "results":
                 return _results is { Count: 0 } ? null : FootShelf("Derniers résultats", _results, null);
             case "favorites":
                 var favorites = library.Lookup(Services.Favorites.Ids);
-                return favorites.Count > 0 ? new ShelfView("Mes favoris", favorites.Take(30).ToList(), BrowseRoute.Favorites) : null;
+                return favorites.Count > 0 ? new ShelfView("Ma liste", favorites.Take(30).ToList(), BrowseRoute.Favorites) : null;
             case "recent":
                 var recent = Services.Profiles.RecentChannels(30).Select(h => library.Item(h.Id)).OfType<MediaItem>().ToList();
-                return recent.Count > 0 ? new ShelfView("Chaînes récentes", recent, null, landscape: true) : null;
+                return recent.Count > 0 ? new ShelfView("Regardées récemment", recent, null, landscape: true) : null;
             case "links":
                 return library.CustomLinkItems.Count > 0 ? new ShelfView("Mes liens", library.CustomLinkItems.Take(30).ToList(), BrowseRoute.CustomLinks) : null;
             case "live":

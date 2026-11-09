@@ -131,7 +131,7 @@ public partial class PlayerWindow : Window
         if (!item.IsLive && Services.Settings.Data.ResumePlayback && Services.Profiles.HistoryFor(item.Id) is { CanResume: true } previous)
             _resumeAt = previous.PositionMs;
 
-        Title = $"{item.Title} — Lumio";
+        Title = $"{item.Title} — iTv";
         TitleText.Text = item.Title;
         SubtitleText.Text = item.Subtitle ?? "";
         LiveBadge.Visibility = item.IsLive ? Visibility.Visible : Visibility.Collapsed;
@@ -186,7 +186,7 @@ public partial class PlayerWindow : Window
     // ── Enregistrement ────────────────────────────────────────────────────
 
     public static string RecordingsFolder =>
-        System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lumio");
+        System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "iTv");
 
     private void ToggleRecording()
     {
@@ -220,7 +220,7 @@ public partial class PlayerWindow : Window
             var saved = _recordPath;
             StopRecordingState();
             StartMedia(position, null);
-            ShowHint($"Enregistré dans Vidéos\\Lumio : {System.IO.Path.GetFileName(saved)}");
+            ShowHint($"Enregistré dans Vidéos\\iTv : {System.IO.Path.GetFileName(saved)}");
         }
     }
 

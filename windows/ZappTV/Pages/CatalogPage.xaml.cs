@@ -20,7 +20,13 @@ public partial class CatalogPage : UserControl
     {
         InitializeComponent();
         _kind = kind;
-        TitleText.Text = kind.Title();
+        var (plain, accent) = kind switch
+        {
+            MediaKind.Live => ("La télé, ", "en direct."),
+            MediaKind.Movie => ("Le cinéma, ", "chez toi."),
+            _ => ("Les séries, ", "sans fin."),
+        };
+        UiFactory.SetAccentTitle(TitleText, plain, accent);
         LayoutPanel.Visibility = kind == MediaKind.Live ? Visibility.Visible : Visibility.Collapsed;
         PageRefresh.Attach(this, Refresh);
     }
