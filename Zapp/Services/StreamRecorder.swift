@@ -40,7 +40,7 @@ final class StreamRecorder {
     @ObservationIgnored private var usesVLC = false
     @ObservationIgnored private var title = ""
 
-    static func supports(_ url: URL) -> Bool {
+    nonisolated static func supports(_ url: URL) -> Bool {
         let scheme = url.scheme?.lowercased()
         return scheme == "http" || scheme == "https"
     }
