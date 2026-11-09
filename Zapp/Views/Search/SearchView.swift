@@ -33,8 +33,9 @@ struct SearchView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Theme.backdrop.ignoresSafeArea())
+            .background(AmbientBackground())
             .navigationTitle("Recherche")
+            .tabBarSpacing()
             .searchable(
                 text: $query,
                 placement: .navigationBarDrawer(displayMode: .always),

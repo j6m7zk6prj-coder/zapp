@@ -6,6 +6,10 @@ import SwiftUI
 struct PlayerView: View {
     let request: PlaybackRequest
     @Environment(\.dismiss) private var dismiss
+    @Environment(ProfileStore.self) private var profiles
+    @Environment(AppSettings.self) private var settings
+    @State private var countdown: Int?
+    @State private var startedAt = Date()
     @State private var native = NativePlayerModel()
     @State private var vlc = VLCPlayerModel()
     @State private var index: Int
@@ -19,6 +23,8 @@ struct PlayerView: View {
 
     private var current: Playable { request.queue[index] }
     private var canZap: Bool { current.isLive && request.queue.count > 1 }
+    private var hasNextEpisode: Bool { !current.isLive && index < request.queue.count - 1 }
+    private var ended: Bool { usingVLC ? vlc.ended : native.ended }
     private var activeError: String? { usingVLC ? vlc.error : native.error }
 
     var body: some View {
@@ -34,13 +40,44 @@ struct PlayerView: View {
                 if let error = activeError {
                     errorOverlay(error)
                 }
+                if let countdown, hasNextEpisode {
+                    nextEpisodeCard(countdown)
+                }
             }
         }
         .background(Color.black.ignoresSafeArea())
         .onAppear { start() }
-        .onChange(of: index) { start() }
+        .onChange(of: index) { oldValue, _ in
+            recordPosition(of: request.queue[oldValue])
+            start()
+        }
         .onChange(of: native.error) { fallBackToVLCIfPossible() }
+        .onChange(of: ended) { _, isEnded in
+            guard isEnded else { return }
+            // Fin du film ou de l'épisode : il sort de « Reprendre la lecture ».
+            if !current.isLive { profiles.removeHistory(current.id) }
+            if hasNextEpisode && settings.autoPlayNext { countdown = 10 }
+        }
+        .task(id: countdown) {
+            guard let value = countdown else { return }
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled, countdown == value else { return }
+            if value <= 1 {
+                playNextEpisode()
+            } else {
+                countdown = value - 1
+            }
+        }
+        .task(id: index) {
+            // Position enregistrée régulièrement pour « Reprendre » et « Regardées récemment ».
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled else { return }
+                recordPosition(of: current)
+            }
+        }
         .onDisappear {
+            recordPosition(of: current)
             native.stop()
             vlc.stop()
         }
@@ -55,14 +92,87 @@ struct PlayerView: View {
 
     private func start() {
         let url = current.url
+        countdown = nil
+        startedAt = Date()
+        var startMs = 0
+        if !current.isLive, settings.resumePlayback, let entry = profiles.history(for: current.id), entry.canResume {
+            startMs = entry.positionMs
+        }
         if PlaybackSupport.usesVLC(url, preference: AppSettings.shared.engine) {
             native.stop()
             usingVLC = true
-            vlc.play(url)
+            vlc.play(url, startMs: startMs)
         } else {
             vlc.stop()
             usingVLC = false
-            native.play(url)
+            native.play(url, startMs: startMs)
+        }
+    }
+
+    private func recordPosition(of playable: Playable) {
+        guard playable.id == current.id else {
+            // Changement de chaîne : on garde juste la chaîne dans l'historique.
+            if playable.isLive { profiles.record(playable, positionMs: nil, durationMs: nil) }
+            return
+        }
+        if playable.isLive {
+            guard Date().timeIntervalSince(startedAt) > 5, activeError == nil else { return }
+            profiles.record(playable, positionMs: nil, durationMs: nil)
+            return
+        }
+        let position = usingVLC ? Int(vlc.currentMs) : native.currentMs
+        let duration = usingVLC ? Int(vlc.durationMs) : native.durationMs
+        guard position > 0, duration > 0, !ended else { return }
+        profiles.record(playable, positionMs: position, durationMs: duration)
+    }
+
+    private func playNextEpisode() {
+        countdown = nil
+        guard hasNextEpisode else { return }
+        index += 1
+    }
+
+    private func nextEpisodeCard(_ value: Int) -> some View {
+        let next = request.queue[index + 1]
+        return VStack {
+            Spacer()
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().stroke(.white.opacity(0.25), lineWidth: 3)
+                    Circle()
+                        .trim(from: 0, to: CGFloat(value) / 10)
+                        .stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .animation(.linear(duration: 1), value: value)
+                    Text("\(value)")
+                        .font(.title3.weight(.bold).monospacedDigit())
+                        .contentTransition(.numericText())
+                }
+                .frame(width: 54, height: 54)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("ÉPISODE SUIVANT")
+                        .font(.caption2.weight(.heavy))
+                        .foregroundStyle(.white.opacity(0.6))
+                    Text(next.title).font(.subheadline.weight(.semibold)).lineLimit(2)
+                    if let subtitle = next.subtitle {
+                        Text(subtitle).font(.caption).foregroundStyle(.white.opacity(0.6)).lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 4)
+                VStack(spacing: 8) {
+                    Button("Lire") { playNextEpisode() }
+                        .buttonStyle(WhiteCapsuleStyle())
+                    Button("Annuler") { countdown = nil }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+            }
+            .padding(16)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.15)))
+            .padding()
+            .frame(maxWidth: 520)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 
@@ -73,7 +183,7 @@ struct PlayerView: View {
               PlaybackSupport.vlcAvailable else { return }
         native.stop()
         usingVLC = true
-        vlc.play(current.url)
+        vlc.play(current.url, startMs: native.currentMs)
     }
 
     private func zap(_ delta: Int) {
@@ -123,6 +233,10 @@ struct PlayerView: View {
             }
 
             Spacer(minLength: 0)
+
+            if hasNextEpisode {
+                zapButton("forward.end.fill", label: "Épisode suivant") { playNextEpisode() }
+            }
 
             if canZap {
                 zapButton("chevron.up", label: "Chaîne précédente") { zap(-1) }
@@ -199,15 +313,38 @@ private struct SystemPlayer: UIViewControllerRepresentable {
 final class NativePlayerModel {
     let player = AVPlayer()
     var error: String?
+    var ended = false
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
+    @ObservationIgnored private var endObserver: NSObjectProtocol?
 
-    func play(_ url: URL) {
+    var currentMs: Int {
+        let seconds = player.currentTime().seconds
+        return seconds.isFinite ? Int(seconds * 1000) : 0
+    }
+
+    var durationMs: Int {
+        guard let seconds = player.currentItem?.duration.seconds, seconds.isFinite else { return 0 }
+        return Int(seconds * 1000)
+    }
+
+    func play(_ url: URL, startMs: Int = 0) {
         error = nil
+        ended = false
         let item = AVPlayerItem(url: url)
         statusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+            if item.status == .readyToPlay, startMs > 0 {
+                Task { @MainActor in
+                    await self?.player.seek(to: CMTime(value: CMTimeValue(startMs), timescale: 1000))
+                }
+                return
+            }
             guard item.status == .failed else { return }
             let message = item.error?.localizedDescription ?? "Format non pris en charge."
             Task { @MainActor in self?.error = message }
+        }
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.ended = true }
         }
         player.replaceCurrentItem(with: item)
         player.play()
@@ -215,6 +352,8 @@ final class NativePlayerModel {
 
     func stop() {
         statusObservation = nil
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = nil
         player.pause()
         player.replaceCurrentItem(with: nil)
     }

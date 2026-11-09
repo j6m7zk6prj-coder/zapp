@@ -10,22 +10,21 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            Theme.backdrop.ignoresSafeArea()
+            AmbientBackground()
 
             VStack(spacing: 26) {
                 Spacer()
 
-                Image(systemName: "play.tv.fill")
-                    .font(.system(size: 72))
-                    .foregroundStyle(Theme.accent)
-                    .shadow(color: Theme.accent.opacity(0.6), radius: 30)
+                InfoTag(text: "Bienvenue sur iTv", icon: "sparkles")
 
-                VStack(spacing: 8) {
-                    Text("Zapp TV")
-                        .font(.system(size: 42, weight: .heavy, design: .rounded))
-                    Text("Tous tes flux, au même endroit.")
-                        .font(.title3)
+                VStack(spacing: 10) {
+                    (Text("Toute ta télé,\n") + Text("sublimée.").accentSerif(size: 46))
+                        .font(.system(size: 42, weight: .bold))
+                        .multilineTextAlignment(.center)
+                    Text("Direct, films, séries et foot réunis dans une app pensée pour l'iPhone.")
+                        .font(.body)
                         .foregroundStyle(Theme.textSecondary)
+                        .multilineTextAlignment(.center)
                 }
 
                 VStack(alignment: .leading, spacing: 14) {
@@ -44,22 +43,17 @@ struct OnboardingView: View {
                     } label: {
                         Label("Ajouter un lien", systemImage: "link.badge.plus")
                     }
-                    .buttonStyle(PrimaryActionStyle())
+                    .buttonStyle(WhiteCapsuleStyle(fullWidth: true))
 
                     Button {
                         sheet = .playlist
                     } label: {
                         Text("Ajouter une playlist")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
-                    .buttonStyle(CardButtonStyle())
+                    .buttonStyle(GlassCapsuleStyle(fullWidth: true))
                 }
 
-                Text("Zapp ne fournit aucun contenu. Utilise uniquement des flux auxquels tu as légalement accès.")
+                Text("iTv ne fournit aucun contenu. Utilise uniquement des flux auxquels tu as légalement accès.")
                     .font(.footnote)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Theme.textSecondary)
@@ -78,8 +72,9 @@ struct OnboardingView: View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.headline)
-                .foregroundStyle(Theme.accent)
-                .frame(width: 28)
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             Text(text)
                 .font(.subheadline)
         }

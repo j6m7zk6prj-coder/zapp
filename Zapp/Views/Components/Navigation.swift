@@ -56,7 +56,7 @@ struct CategoryChips: View {
                     chip(group, value: .group(group))
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 20)
             .padding(.vertical, 10)
         }
         .frame(height: 58)
@@ -79,12 +79,13 @@ struct CategoryChips: View {
             .padding(.vertical, 8)
             .background {
                 if isSelected {
-                    Capsule().fill(Theme.accent)
+                    Capsule().fill(.white)
                 } else {
                     Capsule().fill(.ultraThinMaterial)
+                        .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
                 }
             }
-            .foregroundStyle(isSelected ? Theme.onAccent : Color.white.opacity(0.85))
+            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.85))
         }
         .buttonStyle(.plain)
     }
@@ -101,7 +102,7 @@ struct Shelf: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(items) { item in
@@ -110,7 +111,7 @@ struct Shelf: View {
                         }
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
                 .padding(.bottom, 6)
                 .scrollTargetLayout()
             }
@@ -199,5 +200,6 @@ struct BrowseGridView: View {
         .background(Theme.backdrop.ignoresSafeArea())
         .navigationTitle(route.title)
         .navigationBarTitleDisplayMode(.large)
+        .tabBarSpacing()
     }
 }

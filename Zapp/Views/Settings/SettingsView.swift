@@ -5,11 +5,34 @@ struct SettingsView: View {
     @Environment(CustomizationStore.self) private var customization
     @Environment(Library.self) private var library
     @Environment(AppSettings.self) private var settings
+    @Environment(ProfileStore.self) private var profiles
+    @Environment(MetadataStore.self) private var metadata
     @Environment(\.dismiss) private var dismiss
+    @State private var showProfiles = false
+    @State private var showFollow = false
 
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Button {
+                        showProfiles = true
+                    } label: {
+                        HStack(spacing: 14) {
+                            ProfileAvatar(profile: profiles.active, size: 48)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(profiles.active.name).font(.headline)
+                                Text("\(profiles.profiles.count) profil\(profiles.profiles.count > 1 ? "s" : "") · changer ou modifier")
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.textSecondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(Theme.textSecondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 Section("Contenu") {
                     NavigationLink {
                         LinksView()
@@ -31,6 +54,44 @@ struct SettingsView: View {
                     }
                 }
 
+                Section {
+                    NavigationLink {
+                        TmdbSettingsView()
+                    } label: {
+                        SettingsRow(icon: "film.stack", color: .purple, title: "Fiches films et séries",
+                                    value: settings.tmdbKey.trimmed.isEmpty ? "Désactivées" : "Activées")
+                    }
+                } footer: {
+                    Text("Grandes affiches, notes, résumés, acteurs, bandes-annonces et tendances (TMDB).")
+                }
+
+                Section("Foot") {
+                    Button {
+                        showFollow = true
+                    } label: {
+                        SettingsRow(icon: "soccerball", color: .green, title: "Ligues et équipes suivies",
+                                    value: "\(profiles.current.leagues.count + profiles.current.teams.count)")
+                    }
+                    .buttonStyle(.plain)
+                    Toggle(isOn: Binding(get: { settings.hideScores }, set: { settings.hideScores = $0 })) {
+                        SettingsRow(icon: "eye.slash", color: .gray, title: "Anti-spoiler (masquer les scores)", value: nil)
+                    }
+                    .tint(Theme.accent)
+                    Picker(selection: Binding(get: { settings.footRefreshSeconds }, set: { settings.footRefreshSeconds = $0 })) {
+                        Text("30 s").tag(30)
+                        Text("1 min").tag(60)
+                        Text("2 min").tag(120)
+                        Text("5 min").tag(300)
+                    } label: {
+                        SettingsRow(icon: "arrow.clockwise", color: .teal, title: "Actualisation des scores", value: nil)
+                    }
+                    NavigationLink {
+                        BroadcastersView()
+                    } label: {
+                        SettingsRow(icon: "tv", color: .indigo, title: "Où regarder (chaînes)", value: nil)
+                    }
+                }
+
                 Section("Personnalisation") {
                     NavigationLink {
                         AppearanceView()
@@ -40,6 +101,19 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle(isOn: Binding(get: { settings.autoPlayNext }, set: { settings.autoPlayNext = $0 })) {
+                        SettingsRow(icon: "forward.end.fill", color: .orange, title: "Épisode suivant automatique", value: nil)
+                    }
+                    .tint(Theme.accent)
+                    Toggle(isOn: Binding(get: { settings.resumePlayback }, set: { settings.resumePlayback = $0 })) {
+                        SettingsRow(icon: "clock.arrow.circlepath", color: .blue, title: "Reprendre là où je me suis arrêté", value: nil)
+                    }
+                    .tint(Theme.accent)
+                    Button(role: .destructive) {
+                        profiles.clearHistory()
+                    } label: {
+                        Text("Effacer l'historique de ce profil")
+                    }
                     Picker(selection: Binding(get: { settings.engine }, set: { settings.setEngine($0) })) {
                         ForEach(PlaybackEngine.allCases) { engine in
                             Text(engine.title).tag(engine)
@@ -59,7 +133,7 @@ struct SettingsView: View {
 
                 Section("À propos") {
                     LabeledContent("Version", value: appVersion)
-                    Text("Zapp est uniquement un lecteur : il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des liens et playlists auxquels tu as légalement accès.")
+                    Text("iTv est uniquement un lecteur : il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des liens et playlists auxquels tu as légalement accès.")
                         .font(.footnote)
                         .foregroundStyle(Theme.textSecondary)
                 }
@@ -73,6 +147,8 @@ struct SettingsView: View {
                     Button("OK") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showProfiles) { ProfilePickerView() }
+            .sheet(isPresented: $showFollow) { FootFollowView() }
         }
     }
 
@@ -216,5 +292,127 @@ struct HiddenItemsView: View {
             }
         }
         .navigationTitle("Éléments masqués")
+    }
+}
+
+/// Clé TMDB : fiches enrichies et tendances.
+struct TmdbSettingsView: View {
+    @Environment(AppSettings.self) private var settings
+    @Environment(MetadataStore.self) private var metadata
+    @Environment(Library.self) private var library
+    @Environment(\.openURL) private var openURL
+    @State private var key = ""
+    @State private var status: String?
+    @State private var checking = false
+
+    var body: some View {
+        List {
+            Section {
+                TextField("Clé d'API (v3) ou jeton (v4)", text: $key)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .font(.system(.body, design: .monospaced))
+                Button {
+                    Task { await save() }
+                } label: {
+                    HStack {
+                        Text(key.trimmed.isEmpty ? "Désactiver les fiches" : "Enregistrer et tester")
+                        if checking { Spacer(); ProgressView() }
+                    }
+                }
+                .disabled(checking)
+                if let status {
+                    Text(status).font(.footnote).foregroundStyle(Theme.textSecondary)
+                }
+            } header: {
+                Text("Clé TMDB")
+            } footer: {
+                Text("Gratuit, 2 minutes : crée un compte sur themoviedb.org → Paramètres → API → Créer → « Développeur », usage personnel → copie la « Clé d'API » ici.")
+            }
+
+            Section {
+                Button("Ouvrir themoviedb.org") {
+                    if let url = URL(string: "https://www.themoviedb.org/settings/api") { openURL(url) }
+                }
+                if !settings.tmdbKey.trimmed.isEmpty {
+                    Button("Vider le cache des fiches") {
+                        Task {
+                            await metadata.clearCache()
+                            status = "Cache vidé."
+                        }
+                    }
+                }
+            } footer: {
+                Text("Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.")
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(Theme.backdrop.ignoresSafeArea())
+        .navigationTitle("Fiches films et séries")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear { key = settings.tmdbKey }
+    }
+
+    private func save() async {
+        let value = key.trimmed
+        guard !value.isEmpty else {
+            settings.tmdbKey = ""
+            status = "Fiches désactivées."
+            return
+        }
+        checking = true
+        defer { checking = false }
+        if await metadata.validate(key: value) {
+            settings.tmdbKey = value
+            status = "Clé valide : les fiches sont activées."
+            await metadata.loadTrending(library: library)
+        } else {
+            status = "Clé refusée par TMDB (ou pas de connexion). Vérifie-la et réessaie."
+        }
+    }
+}
+
+/// Diffuseur et chaînes associées pour chaque compétition suivie.
+struct BroadcastersView: View {
+    @Environment(ProfileStore.self) private var profiles
+    @Environment(Library.self) private var library
+    @Environment(AppSettings.self) private var settings
+    @State private var picking: League?
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(profiles.current.leagues, id: \.self) { slug in
+                    let league = LeagueCatalog.find(slug) ?? League(slug: slug, name: LeagueCatalog.name(of: slug), area: "", broadcaster: "", channelKeywords: "")
+                    let channels = Broadcast.channels(for: slug, library: library, profiles: profiles, limit: 3)
+                    Button {
+                        picking = league
+                    } label: {
+                        HStack(spacing: 12) {
+                            Crest(url: LeagueCatalog.logo(for: slug), name: league.name, size: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(league.name)
+                                Text(channels.isEmpty ? (settings.broadcasterLabel(slug).isEmpty ? "Non renseigné" : settings.broadcasterLabel(slug)) : channels.map(\.displayName).joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.textSecondary)
+                                    .lineLimit(2)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(Theme.textSecondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            } footer: {
+                Text("Diffuseurs en France pour la saison 2026-2027. Touche une compétition pour épingler la bonne chaîne de ta playlist.")
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(Theme.backdrop.ignoresSafeArea())
+        .navigationTitle("Où regarder")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $picking) { league in
+            ChannelPickerView(slug: league.slug, leagueName: league.name)
+        }
     }
 }

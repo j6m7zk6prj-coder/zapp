@@ -9,7 +9,7 @@ enum BackgroundStyle: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .night: return "Nuit"
-        case .oled: return "Noir OLED"
+        case .oled: return "Noir"
         case .graphite: return "Graphite"
         case .ocean: return "Océan"
         case .plum: return "Prune"
@@ -50,7 +50,7 @@ enum BackgroundStyle: String, CaseIterable, Identifiable {
     var glow: UInt32 {
         switch self {
         case .night: return 0x182050
-        case .oled: return 0x0B0B0D
+        case .oled: return 0x14102A
         case .graphite: return 0x26282F
         case .ocean: return 0x0B3A4E
         case .plum: return 0x2E1248
@@ -100,6 +100,7 @@ final class AppSettings {
     static let shared = AppSettings()
 
     static let accentPresets: [AccentPreset] = [
+        AccentPreset(name: "iTv", hex: 0x8B7CFF),
         AccentPreset(name: "Bleu", hex: 0x4F6BFF),
         AccentPreset(name: "Indigo", hex: 0x7462FF),
         AccentPreset(name: "Violet", hex: 0xA65CF6),
@@ -112,7 +113,7 @@ final class AppSettings {
         AccentPreset(name: "Blanc", hex: 0xEDEDF2),
     ]
 
-    static let defaultAccent: UInt32 = 0x4F6BFF
+    static let defaultAccent: UInt32 = 0x8B7CFF
 
     private(set) var accentHex: UInt32
     private(set) var background: BackgroundStyle
@@ -120,22 +121,50 @@ final class AppSettings {
     private(set) var liveLayout: LiveLayout
     private(set) var engine: PlaybackEngine
 
+    // Fiches films et séries (clé TMDB fournie par l'utilisateur)
+    var tmdbKey: String { didSet { UserDefaults.standard.set(tmdbKey, forKey: Keys.tmdbKey) } }
+    // Lecture
+    var autoPlayNext: Bool { didSet { UserDefaults.standard.set(autoPlayNext, forKey: Keys.autoPlayNext) } }
+    var resumePlayback: Bool { didSet { UserDefaults.standard.set(resumePlayback, forKey: Keys.resumePlayback) } }
+    // Foot
+    var hideScores: Bool { didSet { UserDefaults.standard.set(hideScores, forKey: Keys.hideScores) } }
+    var footRefreshSeconds: Int { didSet { UserDefaults.standard.set(footRefreshSeconds, forKey: Keys.footRefresh) } }
+    /// Diffuseurs / mots-clés de chaînes modifiés par l'utilisateur (slug → liste).
+    var broadcasters: [String: String] { didSet { UserDefaults.standard.set(broadcasters, forKey: Keys.broadcasters) } }
+
     private enum Keys {
         static let accent = "settings.accent"
         static let background = "settings.background"
         static let posterSize = "settings.posterSize"
         static let liveLayout = "settings.liveLayout"
         static let engine = "settings.engine"
+        static let tmdbKey = "settings.tmdbKey"
+        static let autoPlayNext = "settings.autoPlayNext"
+        static let resumePlayback = "settings.resumePlayback"
+        static let hideScores = "settings.hideScores"
+        static let footRefresh = "settings.footRefresh"
+        static let broadcasters = "settings.broadcasters"
+        static let themeVersion = "settings.themeVersion"
     }
 
     private init() {
         let defaults = UserDefaults.standard
-        if let stored = defaults.object(forKey: Keys.accent) as? NSNumber {
+        let migrating = defaults.integer(forKey: Keys.themeVersion) < 2
+        if let stored = defaults.object(forKey: Keys.accent) as? NSNumber, !(migrating && stored.uint32Value == 0x4F6BFF) {
             accentHex = stored.uint32Value
         } else {
             accentHex = Self.defaultAccent
         }
-        background = BackgroundStyle(rawValue: defaults.string(forKey: Keys.background) ?? "") ?? .night
+        // iTv : fond noir profond par défaut (l'ancien « Nuit » bleuté devient « Noir »).
+        let storedBackground = BackgroundStyle(rawValue: defaults.string(forKey: Keys.background) ?? "")
+        background = migrating && (storedBackground == nil || storedBackground == .night) ? .oled : (storedBackground ?? .oled)
+        defaults.set(2, forKey: Keys.themeVersion)
+        tmdbKey = defaults.string(forKey: Keys.tmdbKey) ?? ""
+        autoPlayNext = defaults.object(forKey: Keys.autoPlayNext) as? Bool ?? true
+        resumePlayback = defaults.object(forKey: Keys.resumePlayback) as? Bool ?? true
+        hideScores = defaults.bool(forKey: Keys.hideScores)
+        footRefreshSeconds = defaults.object(forKey: Keys.footRefresh) as? Int ?? 60
+        broadcasters = defaults.dictionary(forKey: Keys.broadcasters) as? [String: String] ?? [:]
         posterSize = PosterSize(rawValue: defaults.string(forKey: Keys.posterSize) ?? "") ?? .regular
         liveLayout = LiveLayout(rawValue: defaults.string(forKey: Keys.liveLayout) ?? "") ?? .grid
         engine = PlaybackEngine(rawValue: defaults.string(forKey: Keys.engine) ?? "") ?? .auto
@@ -166,9 +195,19 @@ final class AppSettings {
         UserDefaults.standard.set(engine.rawValue, forKey: Keys.engine)
     }
 
+    func broadcasterKeywords(_ slug: String) -> String {
+        if let custom = broadcasters[slug], !custom.trimmed.isEmpty { return custom }
+        return LeagueCatalog.find(slug)?.channelKeywords ?? ""
+    }
+
+    func broadcasterLabel(_ slug: String) -> String {
+        if let custom = broadcasters[slug], !custom.trimmed.isEmpty { return custom }
+        return LeagueCatalog.find(slug)?.broadcaster ?? ""
+    }
+
     func resetAppearance() {
         setAccent(Self.defaultAccent)
-        setBackground(.night)
+        setBackground(.oled)
         setPosterSize(.regular)
         setLiveLayout(.grid)
     }

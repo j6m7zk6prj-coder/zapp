@@ -1,24 +1,21 @@
 import Foundation
 import Observation
 
+/// Favoris du profil actif.
 @MainActor
 @Observable
 final class FavoritesStore {
-    private(set) var ids: Set<String>
-    private static let key = "favorites.v1"
+    @ObservationIgnored private let profiles: ProfileStore
 
-    init() {
-        ids = Set(UserDefaults.standard.stringArray(forKey: Self.key) ?? [])
+    init(profiles: ProfileStore) {
+        self.profiles = profiles
     }
+
+    var ids: Set<String> { profiles.current.favorites }
 
     func contains(_ item: MediaItem) -> Bool { ids.contains(item.id) }
 
     func toggle(_ item: MediaItem) {
-        if ids.contains(item.id) {
-            ids.remove(item.id)
-        } else {
-            ids.insert(item.id)
-        }
-        UserDefaults.standard.set(Array(ids), forKey: Self.key)
+        profiles.toggleFavorite(item.id)
     }
 }

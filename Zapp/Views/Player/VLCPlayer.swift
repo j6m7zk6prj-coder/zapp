@@ -16,6 +16,8 @@ final class VLCPlayerModel {
     private(set) var durationMs: Int32 = 0
     private(set) var timeText = "0:00"
     private(set) var remainingText = ""
+    private(set) var ended = false
+    private(set) var currentMs: Int32 = 0
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var startedAt = Date()
 
@@ -23,14 +25,17 @@ final class VLCPlayerModel {
         player.drawable = view
     }
 
-    func play(_ url: URL) {
+    func play(_ url: URL, startMs: Int = 0) {
         error = nil
+        ended = false
         isBuffering = true
         position = 0
         durationMs = 0
+        currentMs = 0
         startedAt = Date()
         let media = VLCMedia(url: url)
         media.addOption(":network-caching=1500")
+        if startMs > 0 { media.addOption(":start-time=\(startMs / 1000)") }
         player.media = media
         player.play()
         startPolling()
@@ -81,6 +86,9 @@ final class VLCPlayerModel {
         case .error:
             error = "VLC n'a pas pu ouvrir ce flux. Vérifie le lien ou ta connexion."
             isBuffering = false
+        case .ended:
+            ended = true
+            isBuffering = false
         case .opening, .buffering:
             isBuffering = !player.isPlaying
             if isBuffering, Date().timeIntervalSince(startedAt) > 30, Self.milliseconds(player.time) == 0 {
@@ -94,6 +102,7 @@ final class VLCPlayerModel {
         durationMs = Self.milliseconds(player.media?.length)
         position = Double(player.position)
         let now = Self.milliseconds(player.time)
+        currentMs = now
         timeText = Self.format(now)
         remainingText = durationMs > 0 ? "-" + Self.format(max(0, durationMs - now)) : ""
     }
@@ -140,8 +149,10 @@ final class VLCPlayerModel {
     private(set) var durationMs: Int32 = 0
     private(set) var timeText = ""
     private(set) var remainingText = ""
+    private(set) var ended = false
+    private(set) var currentMs: Int32 = 0
 
-    func play(_ url: URL) {
+    func play(_ url: URL, startMs: Int = 0) {
         error = "Le moteur VLC n'est pas intégré à cette version de l'app (lance « pod install »)."
     }
 

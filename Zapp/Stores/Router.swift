@@ -7,6 +7,17 @@ struct PlaybackRequest: Identifiable {
     let index: Int
 }
 
+/// Fiche d'une équipe.
+struct TeamRoute: Hashable {
+    let team: TeamRef
+    let league: String
+}
+
+/// Classement complet d'une compétition.
+struct StandingsRoute: Hashable {
+    let slug: String
+}
+
 /// Écrans « Tout voir » ouverts depuis l'accueil.
 enum BrowseRoute: Hashable {
     case kind(MediaKind)
@@ -30,6 +41,7 @@ enum BrowseRoute: Hashable {
 final class Router {
     var playback: PlaybackRequest?
     var editing: MediaItem?
+    var sheet: AppSheet?
 
     /// Pour une chaîne, `context` devient la file de zapping.
     func play(_ item: MediaItem, context: [MediaItem]) {

@@ -51,6 +51,11 @@ enum Theme {
         )
     }
 
+    /// Couleur dominante stable dérivée d'un nom (teinte des cartes de catégories).
+    static func gradientColor(for seed: String) -> Color {
+        Color(hex: palettes[Int(seed.stableHash % UInt64(palettes.count))].0)
+    }
+
     static func isLight(_ hex: UInt32) -> Bool {
         let r = Double((hex >> 16) & 0xFF)
         let g = Double((hex >> 8) & 0xFF)
