@@ -350,8 +350,13 @@ final class TSRemuxer {
             UInt8((profile << 3) | (frequencyIndex >> 1)),
             UInt8(((frequencyIndex & 1) << 7) | (channels << 3)),
         ]
+        // Le « magic cookie » AAC attendu par CoreMedia est un descripteur MPEG-4 « esds ».
+        let decoderSpecific: [UInt8] = [0x05, UInt8(config.count)] + config
+        let decoderConfig: [UInt8] = [0x04, UInt8(13 + decoderSpecific.count), 0x40, 0x15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] + decoderSpecific
+        let slConfig: [UInt8] = [0x06, 0x01, 0x02]
+        let esds: [UInt8] = [0x03, UInt8(3 + decoderConfig.count + slConfig.count), 0, 0, 0] + decoderConfig + slConfig
         var format: CMFormatDescription?
-        config.withUnsafeBytes { cookie in
+        esds.withUnsafeBytes { cookie in
             _ = CMAudioFormatDescriptionCreate(
                 allocator: kCFAllocatorDefault, asbd: &asbd, layoutSize: 0, layout: nil,
                 magicCookieSize: cookie.count, magicCookie: cookie.baseAddress, extensions: nil, formatDescriptionOut: &format)
