@@ -12,6 +12,8 @@ struct PlayerView: View {
     @State private var countdown: Int?
     @State private var startedAt = Date()
     @State private var recordingNotice: String?
+    @State private var recorder = StreamRecorder()
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showRecordInfo = false
     @AppStorage("recordings.infoShown") private var recordInfoShown = false
     @State private var native = NativePlayerModel()
@@ -49,7 +51,8 @@ struct PlayerView: View {
                 }
                 if let recordingNotice {
                     VStack {
-                        Label(recordingNotice, systemImage: "checkmark.circle.fill")
+                        Label(recordingNotice, systemImage: recordingNotice.hasPrefix("Enregistré") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .multilineTextAlignment(.center)
                             .font(.footnote.weight(.semibold))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
@@ -79,9 +82,14 @@ struct PlayerView: View {
             }
             Button("Annuler", role: .cancel) {}
         } message: {
-            Text("Le flux est copié tel quel, en pleine qualité, dans l'app Fichiers › iTv › Enregistrements. Compte 2 à 4 Go par heure en Full HD. Usage privé uniquement : pas de partage ni de diffusion.")
+            Text("Le flux est copié tel quel, en pleine qualité (meilleure qualité disponible), dans l'app Fichiers › iTv › Enregistrements. Compte 2 à 4 Go par heure en Full HD. L'enregistrement continue si tu changes d'appli, tant que la lecture continue. Usage privé uniquement : pas de partage ni de diffusion.")
         }
         .onChange(of: native.error) { fallBackToVLCIfPossible() }
+        .onChange(of: recorder.failure) { _, failure in
+            // L'enregistrement s'est arrêté tout seul (flux coupé, plus de place…).
+            guard let failure else { return }
+            withAnimation { recordingNotice = failure }
+        }
         .onChange(of: ended) { _, isEnded in
             guard isEnded else { return }
             finishRecording()
@@ -160,10 +168,14 @@ struct PlayerView: View {
 
     // MARK: Enregistrement
 
-    private var canRecord: Bool { PlaybackSupport.vlcAvailable && !current.url.isFileURL }
+    /// Enregistrable : flux http(s) copié directement, ou autre protocole via VLC.
+    private var canRecord: Bool {
+        guard !current.url.isFileURL else { return false }
+        return StreamRecorder.supports(current.url) || PlaybackSupport.vlcAvailable
+    }
 
     private func toggleRecording() {
-        if vlc.isRecording {
+        if recorder.isRecording {
             finishRecording()
         } else if recordInfoShown {
             beginRecording()
@@ -172,25 +184,33 @@ struct PlayerView: View {
         }
     }
 
-    /// L'enregistrement passe par VLC : un flux lu par le lecteur iOS bascule sur VLC à la même position.
+    /// Les flux http(s) (HLS, TS, MP4…) sont copiés à part, sans toucher à la lecture.
+    /// Les autres protocoles (RTMP, RTSP, UDP…) passent par l'enregistreur de VLC.
     private func beginRecording() {
-        if !usingVLC {
-            let position = current.isLive ? 0 : native.currentMs
-            native.stop()
-            usingVLC = true
-            vlc.play(current.url, startMs: position)
+        let url = current.url
+        if StreamRecorder.supports(url) {
+            recorder.start(url: url, title: current.title)
+        } else {
+            if !usingVLC {
+                native.stop()
+                usingVLC = true
+                vlc.play(url)
+            }
+            recorder.startWithVLC(vlc, title: current.title)
         }
-        vlc.startRecording(title: current.title)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
     private func finishRecording() {
-        guard vlc.isRecording else { return }
-        vlc.stopRecording { url in
+        guard recorder.isRecording else { return }
+        recorder.stop(vlc: vlc) { result in
             withAnimation(.snappy) {
-                recordingNotice = url != nil
-                    ? "Enregistré dans Fichiers › iTv › Enregistrements"
-                    : "L'enregistrement n'a pas pu être sauvegardé"
+                switch result {
+                case .success(let file):
+                    recordingNotice = "Enregistré (\(file.sizeText)) dans Fichiers › iTv › Enregistrements"
+                case .failure(let error):
+                    recordingNotice = error.localizedDescription
+                }
             }
         }
     }
@@ -262,85 +282,113 @@ struct PlayerView: View {
 
     // MARK: Interface
 
+    /// Barre du haut : sur une ligne en paysage, sur deux lignes en portrait (titre puis boutons).
     private var topBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.headline)
-                    .frame(width: 38, height: 38)
-                    .background(.white.opacity(0.14), in: Circle())
-            }
-            .accessibilityLabel("Fermer")
-
-            if let artwork = current.artworkURL {
-                LogoArtwork(url: artwork, name: current.title)
-                    .frame(width: 52, height: 32)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    if current.isLive { LiveBadge() }
-                    Text(current.title)
+        let portrait = verticalSizeClass != .compact
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
                         .font(.headline)
-                        .lineLimit(1)
+                        .frame(width: 38, height: 38)
+                        .background(.white.opacity(0.14), in: Circle())
                 }
-                HStack(spacing: 6) {
-                    if let subtitle = current.subtitle {
-                        Text(subtitle).lineLimit(1)
-                    }
-                    Text(usingVLC ? "VLC" : "iOS")
-                        .font(.caption2.weight(.bold))
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 3))
+                .accessibilityLabel("Fermer")
+
+                if let artwork = current.artworkURL {
+                    LogoArtwork(url: artwork, name: current.title)
+                        .frame(width: 52, height: 32)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
-                .font(.caption)
-                .foregroundStyle(Theme.textSecondary)
-            }
 
-            Spacer(minLength: 0)
-
-            if vlc.isRecording, let started = vlc.recordingStartedAt {
-                Button(action: toggleRecording) {
+                VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Circle().fill(.white).frame(width: 7, height: 7)
-                        Text(timerInterval: started...Date.distantFuture, countsDown: false)
-                            .monospacedDigit()
+                        if current.isLive { LiveBadge().fixedSize() }
+                        Text(current.title)
+                            .font(.headline)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                     }
-                    .font(.caption.weight(.heavy))
-                    .padding(.horizontal, 10)
-                    .frame(height: 30)
-                    .background(Color(hex: 0xFF3B30), in: Capsule())
-                }
-                .accessibilityLabel("Arrêter l'enregistrement")
-            } else if canRecord {
-                Button(action: toggleRecording) {
-                    ZStack {
-                        Circle().strokeBorder(.white, lineWidth: 2).frame(width: 20, height: 20)
-                        Circle().fill(Color(hex: 0xFF3B30)).frame(width: 10, height: 10)
+                    HStack(spacing: 6) {
+                        if let subtitle = current.subtitle {
+                            Text(subtitle).lineLimit(1)
+                        }
+                        Text(usingVLC ? "VLC" : "iOS")
+                            .font(.caption2.weight(.bold))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 3))
+                            .fixedSize()
                     }
-                    .frame(width: 38, height: 38)
-                    .background(.white.opacity(0.14), in: Circle())
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
                 }
-                .accessibilityLabel("Enregistrer le flux")
+                .layoutPriority(1)
+
+                Spacer(minLength: 0)
+
+                if portrait {
+                    recordButton
+                } else {
+                    actionButtons
+                }
             }
 
-            if hasNextEpisode {
-                zapButton("forward.end.fill", label: "Épisode suivant") { playNextEpisode() }
-            }
-
-            if canZap {
-                zapButton("chevron.up", label: "Chaîne précédente") { zap(-1) }
-                zapButton("list.bullet", label: "Liste des chaînes") { showChannelList = true }
-                zapButton("chevron.down", label: "Chaîne suivante") { zap(1) }
+            if portrait && (hasNextEpisode || canZap) {
+                HStack(spacing: 12) {
+                    Spacer()
+                    actionButtons
+                    Spacer()
+                }
             }
         }
         .foregroundStyle(.white)
         .padding(.horizontal)
         .padding(.vertical, 10)
+    }
+
+    @ViewBuilder
+    private var recordButton: some View {
+        if recorder.isRecording, let started = recorder.startedAt {
+            Button(action: toggleRecording) {
+                HStack(spacing: 6) {
+                    Circle().fill(.white).frame(width: 7, height: 7)
+                    Text(timerInterval: started...Date.distantFuture, countsDown: false)
+                        .monospacedDigit()
+                }
+                .font(.caption.weight(.heavy))
+                .padding(.horizontal, 10)
+                .frame(height: 30)
+                .background(Color(hex: 0xFF3B30), in: Capsule())
+                .fixedSize()
+            }
+            .accessibilityLabel("Arrêter l'enregistrement")
+        } else if canRecord {
+            Button(action: toggleRecording) {
+                ZStack {
+                    Circle().strokeBorder(.white, lineWidth: 2).frame(width: 20, height: 20)
+                    Circle().fill(Color(hex: 0xFF3B30)).frame(width: 10, height: 10)
+                }
+                .frame(width: 38, height: 38)
+                .background(.white.opacity(0.14), in: Circle())
+            }
+            .accessibilityLabel("Enregistrer le flux")
+        }
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        if verticalSizeClass == .compact { recordButton }
+        if hasNextEpisode {
+            zapButton("forward.end.fill", label: "Épisode suivant") { playNextEpisode() }
+        }
+        if canZap {
+            zapButton("chevron.up", label: "Chaîne précédente") { zap(-1) }
+            zapButton("list.bullet", label: "Liste des chaînes") { showChannelList = true }
+            zapButton("chevron.down", label: "Chaîne suivante") { zap(1) }
+        }
     }
 
     private func zapButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {

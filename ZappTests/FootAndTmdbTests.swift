@@ -210,3 +210,54 @@ final class TmdbTests: XCTestCase {
         XCTAssertEqual(trends[0].year, 2026)
     }
 }
+
+final class StreamRecorderTests: XCTestCase {
+    func testPicksBestVariantAndResolvesURLs() {
+        let master = """
+        #EXTM3U
+        #EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=640x360
+        low/index.m3u8
+        #EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080
+        https://example.com/hd/index.m3u8
+        """
+        let playlist = HLSPlaylist(text: master, base: URL(string: "https://example.com/live/master.m3u8")!)
+        XCTAssertTrue(playlist.isMaster)
+        XCTAssertEqual(playlist.variants.count, 2)
+        XCTAssertEqual(playlist.variants[0].url.absoluteString, "https://example.com/live/low/index.m3u8")
+        XCTAssertEqual(playlist.variants.max { $0.bandwidth < $1.bandwidth }?.url.absoluteString, "https://example.com/hd/index.m3u8")
+    }
+
+    func testParsesMediaPlaylistWithKeyAndSequence() {
+        let media = """
+        #EXTM3U
+        #EXT-X-TARGETDURATION:4
+        #EXT-X-MEDIA-SEQUENCE:120
+        #EXT-X-KEY:METHOD=AES-128,URI="key.bin",IV=0x000102030405060708090A0B0C0D0E0F
+        #EXTINF:4.0,
+        seg120.ts
+        #EXTINF:4.0,
+        seg121.ts
+        """
+        let playlist = HLSPlaylist(text: media, base: URL(string: "https://example.com/hd/index.m3u8")!)
+        XCTAssertFalse(playlist.isMaster)
+        XCTAssertFalse(playlist.endList)
+        XCTAssertEqual(playlist.targetDuration, 4)
+        XCTAssertEqual(playlist.segments.map(\.sequence), [120, 121])
+        XCTAssertEqual(playlist.segments[1].url.absoluteString, "https://example.com/hd/seg121.ts")
+        XCTAssertEqual(playlist.segments[0].keyMethod, "AES-128")
+        XCTAssertEqual(playlist.segments[0].keyURL?.absoluteString, "https://example.com/hd/key.bin")
+        XCTAssertEqual(playlist.segments[0].iv?.count, 16)
+    }
+
+    func testSequenceIVAndDecryptRoundTrip() {
+        let iv = HLSRecorder.sequenceIV(1)
+        XCTAssertEqual(iv.count, 16)
+        XCTAssertEqual(iv.last, 1)
+        XCTAssertNil(HLSRecorder.decrypt(Data([1, 2, 3]), key: Data([1]), iv: iv))
+    }
+
+    func testOnlyHTTPIsCopiedDirectly() {
+        XCTAssertTrue(StreamRecorder.supports(URL(string: "https://example.com/live.m3u8")!))
+        XCTAssertFalse(StreamRecorder.supports(URL(string: "rtmp://example.com/live")!))
+    }
+}
