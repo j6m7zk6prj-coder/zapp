@@ -22,7 +22,12 @@ final class RemuxerTests: XCTestCase {
         try XCTUnwrap(Data(base64Encoded: Self.sample)).write(to: input)
         let output = folder.appendingPathComponent("test.mp4")
 
-        try TSRemuxer(input: input, output: output).run()
+        do {
+            try TSRemuxer(input: input, output: output).run()
+        } catch {
+            XCTFail("Conversion échouée : \(error)")
+            return
+        }
 
         let asset = AVURLAsset(url: output)
         let playable = try await asset.load(.isPlayable)

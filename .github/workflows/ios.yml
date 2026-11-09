@@ -61,7 +61,19 @@ jobs:
             -workspace Zapp.xcworkspace \
             -scheme Zapp \
             -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Détail des tests en échec
+        if: failure()
+        run: |
+          xcrun xcresulttool get test-results tests --path TestResults.xcresult --format json \
+            | python3 -c 'import json,sys
+          def walk(n):
+              if n.get("result")=="Failed" and n.get("nodeType") in ("Failure Message","Test Case"):
+                  print(n.get("nodeType"), ":", n.get("name"))
+              for c in n.get("children",[]): walk(c)
+          for t in json.load(sys.stdin).get("testNodes",[]): walk(t)' || true
 
   ipa:
     name: IPA non signée

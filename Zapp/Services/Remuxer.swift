@@ -412,6 +412,13 @@ final class TSRemuxer {
             for sample in audioList where sample.pts >= start && sample.pts > lastAudioPTS {
                 let duration = Int64(1024 / audioSampleRate * 90_000)
                 if let buffer = makeSample(sample.data, format: audioFormat, pts: sample.pts, dts: sample.pts, duration: duration, key: true) {
+                    if lastAudioPTS == .min {
+                        // AAC recopié tel quel : AVFoundation exige l'indication du délai d'encodeur sur le 1er paquet.
+                        let trim = CMTime(value: 1024, timescale: CMTimeScale(audioSampleRate))
+                        CMSetAttachment(buffer, key: kCMSampleBufferAttachmentKey_TrimDurationAtStart,
+                                        value: CMTimeCopyAsDictionary(trim, allocator: kCFAllocatorDefault),
+                                        attachmentMode: kCMAttachmentMode_ShouldNotPropagate)
+                    }
                     audioQueue.append(buffer)
                     lastAudioPTS = sample.pts
                 }
