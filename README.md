@@ -1,15 +1,17 @@
-# Zapp TV — lecteur IPTV pour iPhone et Windows
+# iTv (iPhone) & Lumio (Windows) — lecteurs IPTV
 
 Lecteur IPTV moderne façon Apple TV : chaînes en direct avec zapping, films, séries, recherche, favoris, liens ajoutés un par un et thème personnalisable.
 
 | Plateforme | Technologie | Télécharger |
 |---|---|---|
-| iPhone / iPad | SwiftUI + VLC | [Dernière IPA](../../releases/latest) (à installer avec Sideloadly / AltStore) |
+| iPhone / iPad | SwiftUI + VLC | [Dernière IPA **iTv**](../../releases/latest) (à installer avec Sideloadly / AltStore) |
 | Windows 10 / 11 | C# WPF + VLC | [Lumio.exe](../../releases/download/windows-latest/Lumio.exe) ou la branche [`app-windows`](../../tree/app-windows) (sur PC l'app s'appelle désormais **Lumio**) |
 
-> Zapp est **uniquement un lecteur**. Il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des playlists auxquelles tu as légalement accès.
+> iTv et Lumio sont **uniquement des lecteurs**. Il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des playlists auxquelles tu as légalement accès.
 
 ## Fonctionnalités
+
+**Nouveau dans iTv 2.0 (iPhone)** : interface façon Apple (barre d'onglets flottante en verre, grande affiche à la une), onglet **Foot** (calendrier, scores en direct, fiches match et équipe, classements, « où regarder » avec les chaînes de ta playlist), fiches **TMDB** (affiches, logo-titre, distribution, bande-annonce, tendances), **profils** « Qui regarde ? », reprise de lecture et **épisode suivant automatique**.
 
 - **Interface façon Apple TV** : carrousel en haut de l'accueil, étagères horizontales, fiches avec fond flouté, bouton « Lire » blanc
 - **Mes liens** : ajoute tes flux **un par un** (nom, type, catégorie, logo), avec détection du format et bouton « Tester »
