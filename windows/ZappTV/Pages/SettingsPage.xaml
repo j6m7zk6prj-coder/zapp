@@ -5,6 +5,10 @@
         <StackPanel Margin="40,28,40,48" MaxWidth="960" HorizontalAlignment="Left">
             <TextBlock Text="Réglages" Style="{StaticResource PageTitle}" />
 
+            <!-- Profil -->
+            <TextBlock Text="Profil" Style="{StaticResource SectionTitle}" />
+            <StackPanel x:Name="ProfileSection" />
+
             <!-- Playlists -->
             <TextBlock Text="Playlists" Style="{StaticResource SectionTitle}" />
             <TextBlock Style="{StaticResource Caption}"
@@ -24,6 +28,18 @@
                     </StackPanel>
                 </Button>
             </StackPanel>
+
+            <!-- Accueil -->
+            <TextBlock Text="Accueil et navigation" Style="{StaticResource SectionTitle}" />
+            <StackPanel x:Name="HomeSection" />
+
+            <!-- Foot -->
+            <TextBlock Text="Foot" Style="{StaticResource SectionTitle}" />
+            <StackPanel x:Name="FootSection" />
+
+            <!-- Lecteur -->
+            <TextBlock Text="Lecteur" Style="{StaticResource SectionTitle}" />
+            <StackPanel x:Name="PlayerSection" />
 
             <!-- Apparence -->
             <TextBlock Text="Apparence" Style="{StaticResource SectionTitle}" />

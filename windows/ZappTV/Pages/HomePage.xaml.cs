@@ -3,56 +3,232 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ZappTV.Controls;
 using ZappTV.Core;
+using ZappTV.Core.Football;
+using ZappTV.Foot;
+using ZappTV.Player;
 
 namespace ZappTV.Pages;
 
+/// <summary>« Pour toi » : sections dans l'ordre choisi dans les réglages.</summary>
 public partial class HomePage : UserControl
 {
+    private List<Match>? _upcoming;
+    private List<Match>? _results;
+    private bool _footLoading;
+    private DateTime _footLoadedAt;
+    private string _footKey = "";
+
     public HomePage()
     {
         InitializeComponent();
         PageRefresh.Attach(this, Refresh);
+
+        // Scores en direct rafraîchis tant que l'accueil est affiché.
+        var timer = new System.Windows.Threading.DispatcherTimer();
+        timer.Tick += (_, _) =>
+        {
+            if (_upcoming?.Any(m => m.State == MatchState.Live || (m.State == MatchState.Scheduled && m.Date <= DateTimeOffset.Now)) != true) return;
+            Services.Foot.Invalidate();
+            _footLoadedAt = DateTime.MinValue;
+            LoadFootAsync();
+        };
+        Loaded += (_, _) =>
+        {
+            timer.Interval = TimeSpan.FromSeconds(Math.Max(30, Services.Settings.Data.FootRefreshSeconds));
+            timer.Start();
+        };
+        Unloaded += (_, _) => timer.Stop();
     }
 
     private void Refresh()
     {
         var library = Services.Library;
-        Hero.SetItems(Featured());
+        var sections = Services.Settings.Data.OrderedHomeSections().Where(s => s.Visible).Select(s => s.Key).ToList();
+
+        Hero.Visibility = sections.Contains("hero") ? Visibility.Visible : Visibility.Collapsed;
+        if (sections.Contains("hero")) Hero.SetItems(Featured());
         Sections.Children.Clear();
+        if (!sections.Contains("hero")) Sections.Children.Add(new Border { Height = 24 });
 
         if (library.IsLoading && library.Items.Count == 0)
             Sections.Children.Add(UiFactory.StatusLine("Chargement de la playlist…"));
         if (library.ErrorMessage is { } error)
             Sections.Children.Add(UiFactory.ErrorBanner(error, () => Services.LoadActivePlaylist(force: true)));
 
-        Sections.Children.Add(QuickCards());
-
-        var favorites = library.Lookup(Services.Favorites.Ids);
-        if (favorites.Count > 0)
-            Sections.Children.Add(new ShelfView("Mes favoris", favorites.Take(30).ToList(), BrowseRoute.Favorites));
-
-        if (library.CustomLinkItems.Count > 0)
-            Sections.Children.Add(new ShelfView("Mes liens", library.CustomLinkItems.Take(30).ToList(), BrowseRoute.CustomLinks));
-
-        var channels = library.All(MediaKind.Live).Take(30).ToList();
-        if (channels.Count > 0)
-            Sections.Children.Add(new ShelfView("En direct", channels, BrowseRoute.OfKind(MediaKind.Live), landscape: true));
-
-        var groups = library.Groups(MediaKind.Live);
-        if (groups.Count > 1)
-            Sections.Children.Add(CategoryLinks("Catégories en direct", MediaKind.Live, groups.Take(30)));
-
-        var movies = library.RecentlyAdded(MediaKind.Movie, 30);
-        if (movies.Count > 0)
-            Sections.Children.Add(new ShelfView("Films récemment ajoutés", movies, BrowseRoute.OfKind(MediaKind.Movie), landscape: false));
-
-        var series = library.RecentlyAdded(MediaKind.Series, 30);
-        if (series.Count > 0)
-            Sections.Children.Add(new ShelfView("Séries récemment ajoutées", series, BrowseRoute.OfKind(MediaKind.Series), landscape: false));
+        foreach (var key in sections)
+        {
+            if (Section(key) is { } element) Sections.Children.Add(element);
+        }
 
         if (library.Items.Count == 0 && !library.IsLoading)
-            Sections.Children.Add(UiFactory.StatusLine("Rien à regarder pour l'instant : ajoute un lien ou une playlist avec le bouton « Ajouter »."));
+            Sections.Children.Add(UiFactory.StatusLine("Rien à regarder pour l'instant : ajoute un lien ou une playlist avec le bouton « + » en haut."));
+
+        if (sections.Contains("foot") || sections.Contains("results")) LoadFootAsync();
     }
+
+    private UIElement? Section(string key)
+    {
+        var library = Services.Library;
+        switch (key)
+        {
+            case "continue":
+                var resume = Services.Profiles.ContinueWatching();
+                return resume.Count > 0 ? ContinueShelf(resume) : null;
+            case "foot":
+                return FootShelf("Matchs à suivre", _upcoming, "Aucun match aujourd'hui ni demain dans tes compétitions.");
+            case "results":
+                return _results is { Count: 0 } ? null : FootShelf("Derniers résultats", _results, null);
+            case "favorites":
+                var favorites = library.Lookup(Services.Favorites.Ids);
+                return favorites.Count > 0 ? new ShelfView("Mes favoris", favorites.Take(30).ToList(), BrowseRoute.Favorites) : null;
+            case "recent":
+                var recent = Services.Profiles.RecentChannels(30).Select(h => library.Item(h.Id)).OfType<MediaItem>().ToList();
+                return recent.Count > 0 ? new ShelfView("Chaînes récentes", recent, null, landscape: true) : null;
+            case "links":
+                return library.CustomLinkItems.Count > 0 ? new ShelfView("Mes liens", library.CustomLinkItems.Take(30).ToList(), BrowseRoute.CustomLinks) : null;
+            case "live":
+                var channels = library.All(MediaKind.Live).Take(30).ToList();
+                return channels.Count > 0 ? new ShelfView("En direct", channels, BrowseRoute.OfKind(MediaKind.Live), landscape: true) : null;
+            case "categories":
+                var groups = library.Groups(MediaKind.Live);
+                return groups.Count > 1 ? CategoryLinks("Catégories en direct", MediaKind.Live, groups.Take(30)) : null;
+            case "movies":
+                var movies = library.RecentlyAdded(MediaKind.Movie, 30);
+                return movies.Count > 0 ? new ShelfView("Films récemment ajoutés", movies, BrowseRoute.OfKind(MediaKind.Movie), landscape: false) : null;
+            case "series":
+                var series = library.RecentlyAdded(MediaKind.Series, 30);
+                return series.Count > 0 ? new ShelfView("Séries récemment ajoutées", series, BrowseRoute.OfKind(MediaKind.Series), landscape: false) : null;
+            default:
+                return null;
+        }
+    }
+
+    // ── Foot ──────────────────────────────────────────────────────────────
+
+    private async void LoadFootAsync()
+    {
+        var data = Services.Profiles.Current;
+        var slugs = data.Leagues.Union(data.Teams.Select(t => t.League)).Where(s => s.Length > 0).Distinct().ToList();
+        var key = string.Join(",", slugs) + "|" + string.Join(",", data.Teams.Select(t => t.Id));
+        var fresh = key == _footKey && DateTime.Now - _footLoadedAt < TimeSpan.FromSeconds(Math.Max(30, Services.Settings.Data.FootRefreshSeconds));
+        if (_footLoading || fresh) return;
+        _footLoading = true;
+        try
+        {
+            var today = DateTime.Today;
+            var days = await Task.WhenAll(
+                Services.Foot.DayAsync(slugs, today.AddDays(-1)),
+                Services.Foot.DayAsync(slugs, today),
+                Services.Foot.DayAsync(slugs, today.AddDays(1)));
+            var all = days.SelectMany(d => d).DistinctBy(m => m.Id).ToList();
+            var teams = data.Teams.Select(t => t.Id).ToHashSet();
+            int Priority(Match m) => teams.Contains(m.Home.Id) || teams.Contains(m.Away.Id) ? 0 : 1;
+            int LeagueRank(Match m) => data.Leagues.IndexOf(m.LeagueSlug) is var i and >= 0 ? i : 99;
+
+            _upcoming = all.Where(m => m.State is MatchState.Live or MatchState.Scheduled && m.Date.ToLocalTime().Date >= today)
+                .OrderBy(m => m.State == MatchState.Live ? 0 : 1).ThenBy(Priority).ThenBy(m => m.Date).ThenBy(LeagueRank)
+                .Take(24).ToList();
+            _results = all.Where(m => m.State == MatchState.Finished)
+                .OrderBy(Priority).ThenByDescending(m => m.Date)
+                .Take(20).ToList();
+        }
+        catch
+        {
+            _upcoming ??= [];
+            _results ??= [];
+        }
+        finally
+        {
+            _footLoading = false;
+            _footKey = key;
+            _footLoadedAt = DateTime.Now;
+        }
+        if (IsLoaded) Refresh();
+    }
+
+    private UIElement FootShelf(string title, List<Match>? matches, string? emptyText)
+    {
+        var panel = new StackPanel { Margin = new Thickness(40, 0, 0, 26) };
+        var header = new DockPanel { Margin = new Thickness(0, 0, 40, 10) };
+        var all = new Button { Style = (Style)FindResource("GhostButton"), Content = "Tout le foot", Padding = new Thickness(14, 6, 14, 6) };
+        all.Click += (_, _) => MainWindow.Instance.ShowSection("foot");
+        DockPanel.SetDock(all, Dock.Right);
+        header.Children.Add(all);
+        header.Children.Add(new TextBlock { Text = title, FontSize = 21, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center });
+        panel.Children.Add(header);
+
+        if (matches is null)
+        {
+            panel.Children.Add(new TextBlock { Text = "Chargement des matchs…", Style = (Style)FindResource("Caption") });
+        }
+        else if (matches.Count == 0)
+        {
+            panel.Children.Add(new TextBlock { Text = emptyText ?? "", Style = (Style)FindResource("Caption") });
+        }
+        else
+        {
+            panel.Children.Add(FootUi.Shelf(matches.Select(m => (UIElement)FootUi.MatchCard(m))));
+        }
+        return panel;
+    }
+
+    // ── Reprendre la lecture ──────────────────────────────────────────────
+
+    private UIElement ContinueShelf(List<HistoryEntry> entries)
+    {
+        var panel = new StackPanel { Margin = new Thickness(40, 0, 0, 26) };
+        panel.Children.Add(new TextBlock { Text = "Reprendre la lecture", FontSize = 21, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 10) });
+        panel.Children.Add(FootUi.Shelf(entries.Select(e => (UIElement)ContinueCard(e))));
+        return panel;
+    }
+
+    private static Button ContinueCard(HistoryEntry entry)
+    {
+        const double width = 280;
+        var image = new Grid { Height = 158, ClipToBounds = true };
+        image.Children.Add(new Border { Background = ThemeManager.GradientFor(entry.Title), CornerRadius = new CornerRadius(14) });
+        if (ImageUrlConverter.Load(entry.Artwork, 560) is { } artwork)
+        {
+            image.Children.Add(new Border
+            {
+                CornerRadius = new CornerRadius(14),
+                Background = new ImageBrush(artwork) { Stretch = Stretch.UniformToFill },
+            });
+        }
+        var progress = new Grid { Height = 4, Margin = new Thickness(12, 0, 12, 12), VerticalAlignment = VerticalAlignment.Bottom };
+        progress.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.001, entry.Progress), GridUnitType.Star) });
+        progress.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(0.001, 1 - entry.Progress), GridUnitType.Star) });
+        progress.Children.Add(new Border { Background = (Brush)Application.Current.FindResource("AccentBrush"), CornerRadius = new CornerRadius(2) });
+        var rest = new Border { Background = new SolidColorBrush(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF)), CornerRadius = new CornerRadius(2) };
+        Grid.SetColumn(rest, 1);
+        progress.Children.Add(rest);
+        image.Children.Add(progress);
+
+        var panel = new StackPanel { Width = width };
+        panel.Children.Add(image);
+        panel.Children.Add(new TextBlock { Text = entry.Title, FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, 10, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis });
+        var remaining = TimeSpan.FromMilliseconds(Math.Max(0, entry.DurationMs - entry.PositionMs));
+        var left = remaining.TotalHours >= 1 ? $"{(int)remaining.TotalHours} h {remaining.Minutes:00}" : $"{Math.Max(1, remaining.Minutes)} min";
+        panel.Children.Add(new TextBlock
+        {
+            Text = string.IsNullOrEmpty(entry.Subtitle) ? $"Encore {left}" : $"{entry.Subtitle} · encore {left}",
+            Style = (Style)Application.Current.FindResource("Caption"),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextWrapping = TextWrapping.NoWrap,
+            Margin = new Thickness(2, 2, 0, 0),
+        });
+
+        var button = new Button { Style = (Style)Application.Current.FindResource("TileButton"), Content = panel, Margin = new Thickness(0, 0, 18, 0) };
+        button.Click += (_, _) => PlayerWindow.Open([entry.ToPlayable()], 0);
+        var menu = new ContextMenu();
+        var remove = new MenuItem { Header = "Retirer de « Reprendre »" };
+        remove.Click += (_, _) => Services.Profiles.RemoveHistory(entry.Id);
+        menu.Items.Add(remove);
+        button.ContextMenu = menu;
+        return button;
+    }
+
+    // ── Autres sections ───────────────────────────────────────────────────
 
     /// <summary>Mise en avant : films/séries récents avec image, sinon favoris, sinon chaînes.</summary>
     private static List<MediaItem> Featured()
@@ -68,47 +244,6 @@ public partial class HomePage : UserControl
         return library.All(MediaKind.Live).Take(6).ToList();
     }
 
-    private static UIElement QuickCards()
-    {
-        var grid = new Grid { Margin = new Thickness(40, 0, 40, 34), MaxWidth = 1100, HorizontalAlignment = HorizontalAlignment.Left };
-        var cards = new (string Title, string Subtitle, string Glyph, uint From, uint To, string Section)[]
-        {
-            ("En direct", $"{Services.Library.Count(MediaKind.Live):N0} chaînes", "", 0x4569FF, 0x2A44D8, "live"),
-            ("Films", $"{Services.Library.Count(MediaKind.Movie):N0} films", "", 0x9B5CF6, 0x6227D9, "movies"),
-            ("Séries", $"{Services.Library.Count(MediaKind.Series):N0} séries", "", 0xEC3B5E, 0xA3123A, "series"),
-        };
-        for (var i = 0; i < cards.Length; i++)
-        {
-            grid.ColumnDefinitions.Add(new ColumnDefinition());
-            var card = cards[i];
-            var text = new StackPanel { Margin = new Thickness(14, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-            text.Children.Add(new TextBlock { Text = card.Title, FontSize = 17, FontWeight = FontWeights.Black });
-            text.Children.Add(new TextBlock { Text = card.Subtitle, FontSize = 12, Opacity = 0.85 });
-            var content = new StackPanel { Orientation = Orientation.Horizontal };
-            content.Children.Add(UiFactory.Icon(card.Glyph, 24));
-            content.Children.Add(text);
-
-            var button = new Button
-            {
-                Style = (Style)Application.Current.FindResource("TileButton"),
-                Margin = new Thickness(i == 0 ? 0 : 8, 0, i == cards.Length - 1 ? 0 : 8, 0),
-                Content = new Border
-                {
-                    Height = 88,
-                    CornerRadius = new CornerRadius(16),
-                    Padding = new Thickness(20, 0, 20, 0),
-                    Background = new LinearGradientBrush(ThemeManager.ColorOf(card.From), ThemeManager.ColorOf(card.To), 30),
-                    Child = content,
-                },
-            };
-            var section = card.Section;
-            button.Click += (_, _) => MainWindow.Instance.ShowSection(section);
-            Grid.SetColumn(button, i);
-            grid.Children.Add(button);
-        }
-        return grid;
-    }
-
     private static UIElement CategoryLinks(string title, MediaKind kind, IEnumerable<string> groups)
     {
         var panel = new StackPanel { Margin = new Thickness(40, 0, 40, 30) };
@@ -119,9 +254,8 @@ public partial class HomePage : UserControl
             var button = new Button
             {
                 Content = group,
-                Style = (Style)Application.Current.FindResource("GhostButton"),
+                Style = (Style)Application.Current.FindResource("PillButton"),
                 Margin = new Thickness(0, 0, 10, 10),
-                FontWeight = FontWeights.SemiBold,
             };
             button.Click += (_, _) => MainWindow.Instance.Push(new BrowsePage(BrowseRoute.OfGroup(kind, group)));
             wrap.Children.Add(button);

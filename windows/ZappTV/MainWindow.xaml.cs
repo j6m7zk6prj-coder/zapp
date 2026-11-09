@@ -4,7 +4,9 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
 using ZappTV.Core;
+using ZappTV.Core.Football;
 using ZappTV.Dialogs;
+using ZappTV.Foot;
 using ZappTV.Pages;
 
 namespace ZappTV;
@@ -15,6 +17,8 @@ public partial class MainWindow : Window
 
     private readonly Stack<FrameworkElement> _history = new();
     private readonly DispatcherTimer _toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
+    private readonly DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DispatcherTimer _liveTimer = new() { Interval = TimeSpan.FromMinutes(2) };
     private string _section = "home";
     private bool _syncingNav;
 
@@ -34,12 +38,118 @@ public partial class MainWindow : Window
         Services.Library.Changed += UpdateStatus;
         Services.Playlists.Changed += OnContentSourcesChanged;
         Services.Customization.Changed += OnContentSourcesChanged;
+        Services.Profiles.Switched += OnProfileSwitched;
+        Services.Profiles.ProfilesChanged += UpdateAvatar;
+        Services.Profiles.FootChanged += CheckLiveAsync;
+        Services.Settings.Changed += OnSettingsChanged;
+
+        _clockTimer.Tick += (_, _) => UpdateClock();
+        _liveTimer.Tick += (_, _) => CheckLiveAsync();
 
         Loaded += (_, _) =>
         {
-            ShowSection("home");
+            ShowSection(StartSection());
             UpdateStatus();
+            UpdateAvatar();
+            OnSettingsChanged();
+            _liveTimer.Start();
+            CheckLiveAsync();
         };
+    }
+
+    private static string StartSection()
+    {
+        var start = Services.Settings.Data.StartPage;
+        return start is "live" or "movies" or "series" or "foot" or "links" ? start : "home";
+    }
+
+    // ── Barre du haut ─────────────────────────────────────────────────────
+
+    private void OnSettingsChanged()
+    {
+        var show = Services.Settings.Data.ShowClock;
+        ClockText.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        if (show) _clockTimer.Start(); else _clockTimer.Stop();
+        UpdateClock();
+        if (!Services.Settings.Data.ShowLiveBadge) LiveDot.Visibility = Visibility.Collapsed;
+    }
+
+    private void UpdateClock() => ClockText.Text = DateTime.Now.ToString("HH:mm");
+
+    private void UpdateAvatar()
+    {
+        var profile = Services.Profiles.Active;
+        AvatarText.Text = profile.Initial;
+        var color = ThemeManager.ColorOf(profile.Color);
+        AvatarCircle.Background = new System.Windows.Media.SolidColorBrush(color);
+        AvatarText.Foreground = ThemeManager.IsLight(profile.Color) ? System.Windows.Media.Brushes.Black : System.Windows.Media.Brushes.White;
+        AvatarButton.ToolTip = $"Profil : {profile.Name}";
+    }
+
+    private void OnProfileSwitched()
+    {
+        UpdateAvatar();
+        ShowSection(_section is "settings" or "search" ? "home" : _section);
+        ShowToast($"Profil « {Services.Profiles.Active.Name} »");
+        CheckLiveAsync();
+    }
+
+    /// <summary>Point rouge sur l'onglet Foot quand une compétition suivie a un match en cours.</summary>
+    private async void CheckLiveAsync()
+    {
+        if (!Services.Settings.Data.ShowLiveBadge)
+        {
+            LiveDot.Visibility = Visibility.Collapsed;
+            return;
+        }
+        try
+        {
+            var data = Services.Profiles.Current;
+            var slugs = data.Leagues.Union(data.Teams.Select(t => t.League)).Where(s => s.Length > 0).ToList();
+            var matches = await Services.Foot.DayAsync(slugs, DateTime.Today);
+            var live = matches.Count(m => m.State == MatchState.Live);
+            LiveDot.Visibility = live > 0 ? Visibility.Visible : Visibility.Collapsed;
+            LiveDot.ToolTip = live == 1 ? "1 match en direct" : $"{live} matchs en direct";
+        }
+        catch
+        {
+            // Pas de réseau : on ne montre rien.
+        }
+    }
+
+    private void Logo_Click(object sender, RoutedEventArgs e) => ShowSection("home");
+    private void Search_Click(object sender, RoutedEventArgs e) => ShowSection("search");
+    private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("settings");
+
+    private void Avatar_Click(object sender, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu { PlacementTarget = AvatarButton, Placement = PlacementMode.Bottom };
+        var header = new MenuItem { Header = $"{Services.Profiles.Active.Name}  ·  {StatusLine()}", IsEnabled = false };
+        menu.Items.Add(header);
+        menu.Items.Add(new Separator());
+        foreach (var profile in Services.Profiles.Profiles)
+        {
+            var item = new MenuItem { Header = profile.Name, IsCheckable = true, IsChecked = profile.Id == Services.Profiles.Active.Id };
+            item.Click += (_, _) => Services.Profiles.Switch(profile.Id);
+            menu.Items.Add(item);
+        }
+        menu.Items.Add(Item("Gérer les profils…", () => new ProfilesWindow().ShowDialog()));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Item("Ligues et équipes suivies…", () => new FootFollowWindow().ShowDialog()));
+        menu.Items.Add(Item("Ajouter une playlist…", () => new AddPlaylistWindow().ShowDialog()));
+        var refresh = Item("Actualiser la playlist (F5)", () => Services.LoadActivePlaylist(force: true));
+        refresh.IsEnabled = Services.Playlists.Active != null && !Services.Library.IsLoading;
+        menu.Items.Add(refresh);
+        menu.Items.Add(Item("Mes liens", () => ShowSection("links")));
+        menu.Items.Add(Item("Réglages", () => ShowSection("settings")));
+        menu.IsOpen = true;
+
+        static MenuItem Item(string text, Action action)
+        {
+            var item = new MenuItem { Header = text };
+            item.Click += (_, _) => action();
+            return item;
+        }
     }
 
     // ── Navigation ────────────────────────────────────────────────────────
@@ -70,6 +180,7 @@ public partial class MainWindow : Window
     private FrameworkElement CreatePage(string section) => section switch
     {
         "live" => new CatalogPage(MediaKind.Live),
+        "foot" => new FootPage(),
         "movies" => new CatalogPage(MediaKind.Movie),
         "series" => new CatalogPage(MediaKind.Series),
         "search" => new SearchPage(),
@@ -81,8 +192,10 @@ public partial class MainWindow : Window
     private void SyncNav()
     {
         _syncingNav = true;
-        foreach (var radio in new[] { NavHome, NavLive, NavMovies, NavSeries, NavSearch, NavLinks, NavSettings })
+        foreach (var radio in new[] { NavHome, NavLive, NavMovies, NavSeries, NavFoot, NavLinks })
             radio.IsChecked = (string)radio.Tag == _section;
+        SearchButton.Opacity = _section == "search" ? 1 : 0.85;
+        SettingsButton.Opacity = _section == "settings" ? 1 : 0.85;
         _syncingNav = false;
     }
 
@@ -109,15 +222,19 @@ public partial class MainWindow : Window
 
     private void UpdateStatus()
     {
+        LoadingBar.Visibility = Services.Library.IsLoading ? Visibility.Visible : Visibility.Collapsed;
+        LoadingBar.ToolTip = StatusLine();
+    }
+
+    private static string StatusLine()
+    {
         var library = Services.Library;
-        LoadingBar.Visibility = library.IsLoading ? Visibility.Visible : Visibility.Collapsed;
         var active = Services.Playlists.Active;
-        StatusText.Text = library.IsLoading
-            ? "Chargement de la playlist…"
-            : active != null
-                ? $"{active.Name} · {library.Items.Count:N0} éléments"
-                : $"{Services.Customization.Links.Count} lien(s)";
-        StatusText.ToolTip = library.ErrorMessage;
+        if (library.IsLoading) return "Chargement de la playlist…";
+        if (library.ErrorMessage is { } error) return $"Erreur : {error}";
+        return active != null
+            ? $"{active.Name} · {library.Items.Count:N0} éléments"
+            : $"{Services.Customization.Links.Count} lien(s)";
     }
 
     public void ShowToast(string message)
@@ -160,6 +277,11 @@ public partial class MainWindow : Window
         if (ctrl && e.Key == Key.V && !typing)
         {
             PasteLink();
+            e.Handled = true;
+        }
+        else if (ctrl && !typing && e.Key is >= Key.D1 and <= Key.D6)
+        {
+            ShowSection(new[] { "home", "live", "movies", "series", "foot", "links" }[e.Key - Key.D1]);
             e.Handled = true;
         }
         else if (ctrl && e.Key == Key.F)

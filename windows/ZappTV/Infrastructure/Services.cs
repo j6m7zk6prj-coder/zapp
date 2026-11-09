@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using LibVLCSharp.Shared;
 using ZappTV.Core;
+using ZappTV.Core.Football;
 
 namespace ZappTV;
 
@@ -11,9 +12,11 @@ public static class Services
     public static SettingsStore Settings { get; private set; } = null!;
     public static PlaylistStore Playlists { get; private set; } = null!;
     public static FavoritesStore Favorites { get; private set; } = null!;
+    public static ProfileStore Profiles { get; private set; } = null!;
+    public static EspnClient Foot { get; } = new();
     public static CustomizationStore Customization { get; private set; } = null!;
     public static Library Library { get; private set; } = null!;
-    public static LibVLC LibVLC => _libVlc ??= new LibVLC("--no-osd", "--no-video-title-show");
+    public static LibVLC LibVLC => _libVlc ??= new LibVLC("--no-osd", "--no-video-title-show", "--no-stats");
 
     private static LibVLC? _libVlc;
 
@@ -21,7 +24,8 @@ public static class Services
     {
         Settings = new SettingsStore();
         Playlists = new PlaylistStore();
-        Favorites = new FavoritesStore();
+        Profiles = new ProfileStore();
+        Favorites = new FavoritesStore(Profiles);
         Customization = new CustomizationStore();
         Library = new Library();
 
@@ -31,6 +35,15 @@ public static class Services
             if (Playlists.Active?.Id != Library.LoadedPlaylistId) LoadActivePlaylist();
         };
         SyncCustomization();
+    }
+
+    /// <summary>Chaînes de la playlist pour une compétition : choix de l'utilisateur d'abord, puis diffuseurs habituels.</summary>
+    public static List<MediaItem> ChannelsFor(string leagueSlug, int limit = 10)
+    {
+        var channels = Library.All(MediaKind.Live);
+        var pinned = Profiles.PinnedChannels(leagueSlug).Select(Library.Item).OfType<MediaItem>().ToList();
+        var matched = ChannelMatcher.Find(channels, Settings.Data.BroadcasterKeywords(leagueSlug), limit);
+        return pinned.Concat(matched).DistinctBy(i => i.Id).Take(limit).ToList();
     }
 
     public static bool HasContent => Playlists.Playlists.Count > 0 || Customization.Links.Count > 0;

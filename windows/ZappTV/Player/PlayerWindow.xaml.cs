@@ -35,6 +35,8 @@ public partial class PlayerWindow : Window
     private DateTime _startedAt;
     private WindowState _restoreState;
     private Point _lastMouse;
+    private long _resumeAt;
+    private DateTime _lastRecord;
 
     /// <summary>Ouvre le lecteur (ou réutilise celui déjà ouvert) sur une file de lecture.</summary>
     public static void Open(IReadOnlyList<Playable> queue, int index)
@@ -67,7 +69,7 @@ public partial class PlayerWindow : Window
         WindowSizing.Fit(this, 1280, 760);
         DarkTitleBar.Attach(this);
 
-        _player = new Vlc.MediaPlayer(Services.LibVLC) { EnableHardwareDecoding = true };
+        _player = new Vlc.MediaPlayer(Services.LibVLC) { EnableHardwareDecoding = Services.Settings.Data.HardwareDecoding };
         VolumeSlider.Value = Services.Settings.Data.Volume;
 
         _player.Buffering += (_, e) =>
@@ -75,7 +77,11 @@ public partial class PlayerWindow : Window
             var cache = e.Cache;
             Dispatcher.InvokeAsync(() => SetBuffering(cache < 100f));
         };
-        _player.Playing += (_, _) => Dispatcher.InvokeAsync(() => SetBuffering(false));
+        _player.Playing += (_, _) => Dispatcher.InvokeAsync(() =>
+        {
+            SetBuffering(false);
+            ApplyResume();
+        });
         _player.EncounteredError += (_, _) =>
             Dispatcher.InvokeAsync(() => ShowError("VLC n'a pas pu ouvrir ce flux. Vérifie le lien ou ta connexion."));
         _player.EndReached += (_, _) => Dispatcher.InvokeAsync(OnEnded);
@@ -85,6 +91,7 @@ public partial class PlayerWindow : Window
             Video.MediaPlayer = _player;
             _videoReady = true;
             PlayCurrent();
+            if (Services.Settings.Data.PlayerStartsFullscreen && !_fullscreen) ToggleFullscreen();
         };
 
         _uiTimer.Tick += (_, _) => RefreshProgress();
@@ -98,6 +105,7 @@ public partial class PlayerWindow : Window
 
     private void Load(IReadOnlyList<Playable> queue, int index)
     {
+        RecordHistory(notify: true);
         _queue = queue;
         _index = Math.Clamp(index, 0, queue.Count - 1);
         PlayCurrent();
@@ -109,6 +117,9 @@ public partial class PlayerWindow : Window
     {
         if (!_videoReady || _queue.Count == 0) return;
         var item = CurrentItem;
+        _resumeAt = 0;
+        if (!item.IsLive && Services.Settings.Data.ResumePlayback && Services.Profiles.HistoryFor(item.Id) is { CanResume: true } previous)
+            _resumeAt = previous.PositionMs;
 
         Title = $"{item.Title} — Zapp TV";
         TitleText.Text = item.Title;
@@ -135,7 +146,7 @@ public partial class PlayerWindow : Window
         RemainingText.Text = "";
 
         using var media = new Vlc.Media(Services.LibVLC, item.Url, Vlc.FromType.FromLocation);
-        media.AddOption(":network-caching=1500");
+        media.AddOption($":network-caching={Math.Clamp(Services.Settings.Data.NetworkCacheMs, 300, 20000)}");
         media.AddOption(":http-reconnect");
         _player.Play(media);
         _player.Volume = (int)VolumeSlider.Value;
@@ -144,9 +155,47 @@ public partial class PlayerWindow : Window
         ShowControls();
     }
 
+    /// <summary>Reprise d'un film / épisode là où on s'était arrêté.</summary>
+    private void ApplyResume()
+    {
+        if (_resumeAt <= 0 || _player.Length <= 0) return;
+        var target = Math.Min(_resumeAt, _player.Length - 5000);
+        _resumeAt = 0;
+        if (target <= 0) return;
+        _player.Time = target;
+        HintText.Text = $"Reprise à {Format(target)}";
+    }
+
+    /// <summary>Historique du profil : chaînes récentes et « Reprendre la lecture ».</summary>
+    private void RecordHistory(bool notify)
+    {
+        if (_queue.Count == 0 || _index >= _queue.Count) return;
+        var item = CurrentItem;
+        try
+        {
+            if (item.IsLive)
+            {
+                // Chaîne : comptée comme regardée après quelques secondes de lecture.
+                if (DateTime.Now - _startedAt < TimeSpan.FromSeconds(5)) return;
+                if (_player.Time <= 0 && !_player.IsPlaying) return;
+                Services.Profiles.Record(item, -1, 0, notify);
+                return;
+            }
+            var length = _player.Length;
+            var time = _player.Time;
+            if (length <= 0 || time <= 0) return;
+            Services.Profiles.Record(item, time, length, notify);
+        }
+        catch
+        {
+            // Lecteur en cours d'arrêt : rien à enregistrer.
+        }
+    }
+
     private void Zap(int delta)
     {
         if (!CanZap) return;
+        RecordHistory(notify: true);
         _index = (_index + delta + _queue.Count) % _queue.Count;
         PlayCurrent();
     }
@@ -198,6 +247,12 @@ public partial class PlayerWindow : Window
             && DateTime.Now - _startedAt > TimeSpan.FromSeconds(30) && _player.Time <= 0)
         {
             ShowError("Le flux ne répond pas (délai dépassé).");
+        }
+
+        if (DateTime.Now - _lastRecord > TimeSpan.FromSeconds(5) && _player.IsPlaying)
+        {
+            _lastRecord = DateTime.Now;
+            RecordHistory(notify: false);
         }
 
         var length = _player.Length;
@@ -413,6 +468,7 @@ public partial class PlayerWindow : Window
 
     private void OnClosed(object? sender, EventArgs e)
     {
+        RecordHistory(notify: true);
         Current = null;
         _uiTimer.Stop();
         _hideTimer.Stop();

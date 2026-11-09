@@ -4,7 +4,7 @@
              xmlns:c="clr-namespace:ZappTV.Controls">
     <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" Focusable="False">
         <StackPanel Margin="0,0,0,40">
-            <c:HeroBanner x:Name="Hero" Margin="40,32,40,30" />
+            <c:HeroBanner x:Name="Hero" Margin="40,28,40,30" />
             <StackPanel x:Name="Sections" />
         </StackPanel>
     </ScrollViewer>

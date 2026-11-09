@@ -96,9 +96,11 @@ Travaille fonctionnalité par fonctionnalité, et teste après chaque modificati
 Le dossier [`windows/`](windows) contient l'app PC (.NET 10, WPF, LibVLCSharp) :
 
 - même contenu que sur iPhone : liens perso, playlists M3U / Xtream, favoris, modifications, thème ;
-- interface adaptée au PC : barre latérale, survol à la souris, clic droit, glisser-déposer d'un `.m3u` ou d'un lien ;
+- interface adaptée au PC : onglets en pastilles (Pour toi, Direct, Films, Séries, Foot, Mes liens), survol à la souris, clic droit, glisser-déposer d'un `.m3u` ou d'un lien ;
+- **Foot (v2.0)** : calendrier des compétitions suivies, scores en direct, fiches match (buteurs, statistiques, compositions), classements, fiches équipe, et « Où regarder » qui relie chaque compétition à son diffuseur et aux chaînes de ta playlist (données publiques ESPN, diffuseurs modifiables) ;
+- profils (favoris, historique, ligues et équipes par personne), « Reprendre la lecture », chaînes récentes, accueil personnalisable, mode anti-spoiler ;
 - raccourcis : Ctrl+V coller un lien, Ctrl+F rechercher, F5 actualiser ; dans le lecteur Espace, ↑ ↓ zapping, ← → ±10 s, F plein écran ;
-- `ZappTV.Core` (parser M3U, Xtream, bibliothèque) est testé à chaque push (`windows/ZappTV.Tests`).
+- `ZappTV.Core` (parser M3U, Xtream, bibliothèque, données foot, profils) est testé à chaque push (`windows/ZappTV.Tests`).
 
 Compiler soi-même (Windows + SDK .NET 10) :
 

@@ -213,10 +213,77 @@ public sealed class AppSettingsData
     public LiveLayout LiveLayout { get; set; } = LiveLayout.Grid;
     public double Volume { get; set; } = 80;
 
+    // Accueil et navigation
+    public string StartPage { get; set; } = "home";
+    public List<HomeSectionPref> HomeSections { get; set; } = [];
+    public bool HeroAutoplay { get; set; } = true;
+    public bool ShowClock { get; set; } = true;
+
+    // Foot
+    public bool HideScores { get; set; }
+    public int FootRefreshSeconds { get; set; } = 60;
+    public bool ShowLiveBadge { get; set; } = true;
+    /// <summary>Diffuseurs / mots-clés de chaînes modifiés par l'utilisateur (slug → liste).</summary>
+    public Dictionary<string, string> FootBroadcasters { get; set; } = new();
+
+    // Lecteur
+    public bool HardwareDecoding { get; set; } = true;
+    public int NetworkCacheMs { get; set; } = 1500;
+    public bool ResumePlayback { get; set; } = true;
+    public bool PlayerStartsFullscreen { get; set; }
+
+    /// <summary>Sections de l'accueil dans l'ordre choisi, complétées avec celles qui manquent.</summary>
+    public List<HomeSectionPref> OrderedHomeSections()
+    {
+        var known = HomeSectionCatalog.All.Select(s => s.Key).ToHashSet();
+        var list = HomeSections.Where(s => known.Contains(s.Key)).DistinctBy(s => s.Key).ToList();
+        foreach (var section in HomeSectionCatalog.All)
+        {
+            if (list.All(s => s.Key != section.Key)) list.Add(new HomeSectionPref { Key = section.Key, Visible = section.DefaultVisible });
+        }
+        return list;
+    }
+
+    public string BroadcasterKeywords(string slug) =>
+        FootBroadcasters.TryGetValue(slug, out var custom) && !string.IsNullOrWhiteSpace(custom)
+            ? custom
+            : Football.LeagueCatalog.Find(slug)?.ChannelKeywords ?? "";
+
+    public string BroadcasterLabel(string slug) =>
+        FootBroadcasters.TryGetValue(slug, out var custom) && !string.IsNullOrWhiteSpace(custom)
+            ? custom
+            : Football.LeagueCatalog.Find(slug)?.Broadcaster ?? "";
+
     public static readonly (string Name, uint Hex)[] AccentPresets =
     [
         ("Bleu", 0x4F6BFF), ("Indigo", 0x7462FF), ("Violet", 0xA65CF6), ("Rose", 0xF0458A),
         ("Rouge", 0xF2414B), ("Orange", 0xFF8A1F), ("Jaune", 0xF5C518), ("Vert", 0x2FCB6B),
         ("Turquoise", 0x19C3C3), ("Blanc", 0xEDEDF2),
     ];
+}
+
+public sealed class HomeSectionPref
+{
+    public string Key { get; set; } = "";
+    public bool Visible { get; set; } = true;
+}
+
+public static class HomeSectionCatalog
+{
+    public static readonly IReadOnlyList<(string Key, string Title, bool DefaultVisible)> All =
+    [
+        ("hero", "Bannière à la une", true),
+        ("continue", "Reprendre la lecture", true),
+        ("foot", "Matchs à suivre", true),
+        ("results", "Derniers résultats", true),
+        ("favorites", "Mes favoris", true),
+        ("recent", "Chaînes récentes", true),
+        ("links", "Mes liens", true),
+        ("live", "En direct", true),
+        ("categories", "Catégories", true),
+        ("movies", "Films récents", true),
+        ("series", "Séries récentes", true),
+    ];
+
+    public static string TitleOf(string key) => All.FirstOrDefault(s => s.Key == key).Title ?? key;
 }

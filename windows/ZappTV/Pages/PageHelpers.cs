@@ -32,6 +32,8 @@ public static class PageRefresh
             Services.Library.Changed += Schedule;
             Services.Favorites.Changed += Schedule;
             Services.Settings.Changed += Schedule;
+            Services.Profiles.HistoryChanged += Schedule;
+            Services.Profiles.FootChanged += Schedule;
             refresh();
         };
         page.Unloaded += (_, _) =>
@@ -39,6 +41,8 @@ public static class PageRefresh
             Services.Library.Changed -= Schedule;
             Services.Favorites.Changed -= Schedule;
             Services.Settings.Changed -= Schedule;
+            Services.Profiles.HistoryChanged -= Schedule;
+            Services.Profiles.FootChanged -= Schedule;
         };
     }
 }

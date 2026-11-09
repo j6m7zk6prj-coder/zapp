@@ -6,31 +6,59 @@
         Background="{DynamicResource BgBrush}" Foreground="White" FontFamily="{StaticResource UiFont}"
         AllowDrop="True" Drop="Window_Drop" PreviewKeyDown="Window_PreviewKeyDown" PreviewMouseDown="Window_PreviewMouseDown">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="240" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-        <!-- Barre latérale -->
-        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,1,0">
-            <DockPanel Margin="14,22,14,18">
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8,0,0,28">
-                    <Image Source="/Assets/logo.png" Width="34" Height="34" RenderOptions.BitmapScalingMode="HighQuality" />
-                    <TextBlock Text="ZAPP" FontSize="22" FontWeight="Black" Margin="10,0,7,0" VerticalAlignment="Center" />
-                    <Border Background="{DynamicResource AccentBrush}" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
-                        <TextBlock Text="TV" FontWeight="Black" FontSize="12" Foreground="{DynamicResource OnAccentBrush}" />
-                    </Border>
+        <!-- Barre du haut : onglets en pastilles -->
+        <Border Background="{DynamicResource BgBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="20,12,20,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="BackButton" Style="{StaticResource CircleButton}" Width="38" Height="38" Margin="0,0,14,0"
+                            Click="Back_Click" Visibility="Collapsed" ToolTip="Retour (Alt+←)">
+                        <TextBlock Text="&#xE72B;" Style="{StaticResource Icon}" FontSize="14" />
+                    </Button>
+                    <Button Style="{StaticResource PlainButton}" Click="Logo_Click" ToolTip="Accueil">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="/Assets/logo.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality" />
+                            <TextBlock Text="ZAPP" FontSize="20" FontWeight="Black" Margin="9,0,6,0" VerticalAlignment="Center" />
+                            <Border Background="{DynamicResource AccentBrush}" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
+                                <TextBlock Text="TV" FontWeight="Black" FontSize="11" Foreground="{DynamicResource OnAccentBrush}" />
+                            </Border>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
-                <StackPanel DockPanel.Dock="Bottom">
-                    <TextBlock x:Name="StatusText" Style="{StaticResource Caption}" FontSize="12" Margin="8,0,8,6" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-                    <ProgressBar x:Name="LoadingBar" IsIndeterminate="True" Height="3" Margin="8,0,8,10" Visibility="Collapsed"
-                                 Foreground="{DynamicResource AccentBrush}" Background="#1FFFFFFF" BorderThickness="0" />
-                    <Button x:Name="AddButton" Style="{StaticResource AccentButton}" Click="Add_Click" HorizontalAlignment="Stretch">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" FontSize="13" Margin="0,0,8,0" />
-                            <TextBlock Text="Ajouter" />
-                        </StackPanel>
+                <Border Grid.Column="1" Background="#14FFFFFF" CornerRadius="100" Padding="5" VerticalAlignment="Center">
+                    <StackPanel x:Name="Tabs" Orientation="Horizontal">
+                        <RadioButton x:Name="NavHome" Style="{StaticResource TopTab}" GroupName="Nav" Tag="home" Checked="Nav_Checked" Content="Pour toi" />
+                        <RadioButton x:Name="NavLive" Style="{StaticResource TopTab}" GroupName="Nav" Tag="live" Checked="Nav_Checked" Content="Direct" />
+                        <RadioButton x:Name="NavMovies" Style="{StaticResource TopTab}" GroupName="Nav" Tag="movies" Checked="Nav_Checked" Content="Films" />
+                        <RadioButton x:Name="NavSeries" Style="{StaticResource TopTab}" GroupName="Nav" Tag="series" Checked="Nav_Checked" Content="Séries" />
+                        <RadioButton x:Name="NavFoot" Style="{StaticResource TopTab}" GroupName="Nav" Tag="foot" Checked="Nav_Checked">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Foot" />
+                                <Ellipse x:Name="LiveDot" Width="8" Height="8" Fill="#E5484D" Margin="7,1,0,0" VerticalAlignment="Center" Visibility="Collapsed" ToolTip="Match en direct" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="NavLinks" Style="{StaticResource TopTab}" GroupName="Nav" Tag="links" Checked="Nav_Checked" Content="Mes liens" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock x:Name="ClockText" FontSize="15" FontWeight="SemiBold" Opacity="0.85" VerticalAlignment="Center" Margin="0,0,14,0" />
+                    <Button x:Name="SearchButton" Style="{StaticResource IconButton}" Click="Search_Click" ToolTip="Rechercher (Ctrl+F)">
+                        <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" />
+                    </Button>
+                    <Button x:Name="AddButton" Style="{StaticResource IconButton}" Click="Add_Click" ToolTip="Ajouter" Margin="2,0">
+                        <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" />
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Ajouter un lien de flux…" Click="AddLink_Click" />
@@ -39,67 +67,23 @@
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
+                    <Button x:Name="SettingsButton" Style="{StaticResource IconButton}" Click="Settings_Click" ToolTip="Réglages">
+                        <TextBlock Text="&#xE713;" Style="{StaticResource Icon}" />
+                    </Button>
+                    <Button x:Name="AvatarButton" Style="{StaticResource PlainButton}" Click="Avatar_Click" Margin="10,0,0,0" ToolTip="Profil">
+                        <Border x:Name="AvatarCircle" Width="36" Height="36" CornerRadius="18" Background="{DynamicResource AccentBrush}">
+                            <TextBlock x:Name="AvatarText" FontWeight="Black" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
                 </StackPanel>
-
-                <StackPanel>
-                    <RadioButton x:Name="NavHome" Style="{StaticResource NavButton}" GroupName="Nav" Tag="home" Checked="Nav_Checked">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource NavIcon}" Text="&#xE80F;" />
-                            <TextBlock Text="Accueil" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton x:Name="NavLive" Style="{StaticResource NavButton}" GroupName="Nav" Tag="live" Checked="Nav_Checked">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource NavIcon}" Text="&#xE7F4;" />
-                            <TextBlock Text="En direct" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton x:Name="NavMovies" Style="{StaticResource NavButton}" GroupName="Nav" Tag="movies" Checked="Nav_Checked">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource NavIcon}" Text="&#xE8B2;" />
-                            <TextBlock Text="Films" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton x:Name="NavSeries" Style="{StaticResource NavButton}" GroupName="Nav" Tag="series" Checked="Nav_Checked">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource NavIcon}" Text="&#xE8F1;" />
-                            <TextBlock Text="Séries" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton x:Name="NavSearch" Style="{StaticResource NavButton}" GroupName="Nav" Tag="search" Checked="Nav_Checked">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource NavIcon}" Text="&#xE721;" />
-                            <TextBlock Text="Recherche" />
-                        </StackPanel>
-                    </RadioButton>
-
-                    <Border Height="1" Background="{StaticResource HairlineBrush}" Margin="10,14" />
-
-                    <RadioButton x:Name="NavLinks" Style="{StaticResource NavButton}" GroupName="Nav" Tag="links" Checked="Nav_Checked">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource NavIcon}" Text="&#xE71B;" />
-                            <TextBlock Text="Mes liens" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton x:Name="NavSettings" Style="{StaticResource NavButton}" GroupName="Nav" Tag="settings" Checked="Nav_Checked">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource NavIcon}" Text="&#xE713;" />
-                            <TextBlock Text="Réglages" />
-                        </StackPanel>
-                    </RadioButton>
-                </StackPanel>
-            </DockPanel>
+            </Grid>
         </Border>
+        <ProgressBar x:Name="LoadingBar" IsIndeterminate="True" Height="2" VerticalAlignment="Bottom" Visibility="Collapsed"
+                     Foreground="{DynamicResource AccentBrush}" Background="Transparent" BorderThickness="0" />
 
         <!-- Contenu -->
-        <Grid Grid.Column="1" Background="{DynamicResource BackdropBrush}" ClipToBounds="True">
+        <Grid Grid.Row="1" Background="{DynamicResource BackdropBrush}" ClipToBounds="True">
             <ContentControl x:Name="Host" Focusable="False" />
-
-            <Button x:Name="BackButton" Style="{StaticResource CircleButton}" Width="40" Height="40"
-                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="22,18,0,0"
-                    Click="Back_Click" Visibility="Collapsed" ToolTip="Retour (Alt+←)">
-                <TextBlock Text="&#xE72B;" Style="{StaticResource Icon}" FontSize="15" />
-            </Button>
 
             <Border x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,28"
                     Background="#F2202330" CornerRadius="12" Padding="18,11" BorderBrush="#33FFFFFF" BorderThickness="1"

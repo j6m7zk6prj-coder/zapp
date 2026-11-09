@@ -19,7 +19,7 @@ public partial class HeroBanner : UserControl
         InitializeComponent();
         _timer.Tick += (_, _) => Move(1);
         Unloaded += (_, _) => _timer.Stop();
-        Loaded += (_, _) => { if (_items.Count > 1) _timer.Start(); };
+        Loaded += (_, _) => { if (_items.Count > 1 && Services.Settings.Data.HeroAutoplay) _timer.Start(); };
     }
 
     public void SetItems(IReadOnlyList<MediaItem> items)
@@ -31,7 +31,7 @@ public partial class HeroBanner : UserControl
         BuildDots();
         Show(animate: false);
         _timer.Stop();
-        if (items.Count > 1 && IsLoaded) _timer.Start();
+        if (items.Count > 1 && IsLoaded && Services.Settings.Data.HeroAutoplay) _timer.Start();
     }
 
     private MediaItem? Current => _items.Count > 0 ? _items[_index] : null;
@@ -117,7 +117,7 @@ public partial class HeroBanner : UserControl
     private void Root_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
     {
         PrevButton.Visibility = NextButton.Visibility = Visibility.Hidden;
-        if (_items.Count > 1) _timer.Start();
+        if (_items.Count > 1 && Services.Settings.Data.HeroAutoplay) _timer.Start();
     }
 
     private void Play_Click(object sender, RoutedEventArgs e)

@@ -55,28 +55,24 @@ public sealed class PlaylistStore
     }
 }
 
+/// <summary>Favoris du profil actif.</summary>
 public sealed class FavoritesStore
 {
-    private readonly string _path = AppPaths.DataFile("favorites.json");
-    private readonly HashSet<string> _ids;
+    private readonly ProfileStore _profiles;
 
     public event Action? Changed;
 
-    public FavoritesStore()
+    public FavoritesStore(ProfileStore profiles)
     {
-        _ids = new HashSet<string>(JsonFile.Load<List<string>>(_path) ?? new List<string>());
+        _profiles = profiles;
+        profiles.FavoritesChanged += () => Changed?.Invoke();
     }
 
-    public IReadOnlyCollection<string> Ids => _ids;
+    public IReadOnlyCollection<string> Ids => _profiles.Current.Favorites;
 
-    public bool Contains(string id) => _ids.Contains(id);
+    public bool Contains(string id) => _profiles.Current.Favorites.Contains(id);
 
-    public void Toggle(string id)
-    {
-        if (!_ids.Remove(id)) _ids.Add(id);
-        JsonFile.Save(_path, _ids.ToList());
-        Changed?.Invoke();
-    }
+    public void Toggle(string id) => _profiles.ToggleFavorite(id);
 }
 
 internal sealed class CustomizationData

@@ -22,6 +22,9 @@ public partial class SettingsPage : UserControl
             Services.Playlists.Changed += Refresh;
             Services.Library.Changed += Refresh;
             Services.Settings.Changed += Refresh;
+            Services.Profiles.ProfilesChanged += Refresh;
+            Services.Profiles.Switched += Refresh;
+            Services.Profiles.FootChanged += Refresh;
             Refresh();
         };
         Unloaded += (_, _) =>
@@ -29,12 +32,19 @@ public partial class SettingsPage : UserControl
             Services.Playlists.Changed -= Refresh;
             Services.Library.Changed -= Refresh;
             Services.Settings.Changed -= Refresh;
+            Services.Profiles.ProfilesChanged -= Refresh;
+            Services.Profiles.Switched -= Refresh;
+            Services.Profiles.FootChanged -= Refresh;
         };
     }
 
     private void Refresh()
     {
         BuildPlaylists();
+        BuildProfile();
+        BuildHome();
+        BuildFoot();
+        BuildPlayer();
         BuildAppearance();
         BuildHidden();
         RefreshButton.IsEnabled = !Services.Library.IsLoading && Services.Playlists.Active != null;
@@ -244,6 +254,7 @@ public partial class SettingsPage : UserControl
             ("Ctrl + V", "Coller un lien de flux ou de playlist"),
             ("Ctrl + N", "Ajouter un lien"),
             ("Ctrl + F", "Rechercher"),
+            ("Ctrl + 1 … 6", "Pour toi · Direct · Films · Séries · Foot · Mes liens"),
             ("F5", "Actualiser la playlist"),
             ("Alt + ← / Retour arrière", "Revenir en arrière"),
             ("Espace", "Lecture / pause (lecteur)"),
