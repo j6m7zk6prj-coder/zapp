@@ -18,6 +18,7 @@ public partial class LinkEditorWindow : Window
     {
         InitializeComponent();
         Owner = MainWindow.Instance;
+        WindowSizing.FitDialog(this);
         DarkTitleBar.Attach(this);
         _existing = link;
 

@@ -64,6 +64,7 @@ public partial class PlayerWindow : Window
     private PlayerWindow()
     {
         InitializeComponent();
+        WindowSizing.Fit(this, 1280, 760);
         DarkTitleBar.Attach(this);
 
         _player = new Vlc.MediaPlayer(Services.LibVLC) { EnableHardwareDecoding = true };

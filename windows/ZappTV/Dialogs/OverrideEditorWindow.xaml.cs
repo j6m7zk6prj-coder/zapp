@@ -14,6 +14,7 @@ public partial class OverrideEditorWindow : Window
     {
         InitializeComponent();
         Owner = MainWindow.Instance;
+        WindowSizing.FitDialog(this);
         DarkTitleBar.Attach(this);
         _original = original;
 

@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     {
         Instance = this;
         InitializeComponent();
+        WindowSizing.Fit(this, 1400, 860);
         DarkTitleBar.Attach(this);
 
         _toastTimer.Tick += (_, _) =>

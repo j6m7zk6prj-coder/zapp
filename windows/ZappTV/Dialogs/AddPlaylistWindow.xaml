@@ -4,6 +4,7 @@
         Title="Ajouter une playlist" Width="580" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="/Assets/app.ico"
         Background="{DynamicResource SurfaceBrush}" Foreground="White" FontFamily="{StaticResource UiFont}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
     <StackPanel Margin="30,24,30,26">
         <TextBlock Text="Ajouter une playlist" FontSize="24" FontWeight="Black" />
         <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,0" Text="Une playlist contient plusieurs chaînes, films ou séries." />
@@ -48,4 +49,5 @@
             <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Margin="0,0,10,0" IsCancel="True" Content="Annuler" />
         </DockPanel>
     </StackPanel>
+    </ScrollViewer>
 </Window>

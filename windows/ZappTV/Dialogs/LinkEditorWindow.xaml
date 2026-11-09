@@ -5,6 +5,7 @@
         Title="Nouveau lien" Width="620" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="/Assets/app.ico"
         Background="{DynamicResource SurfaceBrush}" Foreground="White" FontFamily="{StaticResource UiFont}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
     <StackPanel Margin="30,24,30,26">
         <TextBlock x:Name="Heading" Text="Nouveau lien" FontSize="24" FontWeight="Black" />
         <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,0"
@@ -51,4 +52,5 @@
                     Margin="10,0,0,0" Click="Delete_Click" Content="Supprimer" Visibility="Collapsed" />
         </DockPanel>
     </StackPanel>
+    </ScrollViewer>
 </Window>

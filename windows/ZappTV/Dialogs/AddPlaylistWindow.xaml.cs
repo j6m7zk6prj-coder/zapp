@@ -13,6 +13,7 @@ public partial class AddPlaylistWindow : Window
     {
         InitializeComponent();
         Owner = MainWindow.Instance;
+        WindowSizing.FitDialog(this);
         DarkTitleBar.Attach(this);
 
         NameBox.Text = prefillName ?? "";

@@ -5,6 +5,7 @@
         Title="Modifier" Width="600" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="/Assets/app.ico"
         Background="{DynamicResource SurfaceBrush}" Foreground="White" FontFamily="{StaticResource UiFont}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
     <StackPanel Margin="30,24,30,26">
         <TextBlock Text="Modifier" FontSize="24" FontWeight="Black" />
         <TextBlock x:Name="OriginalText" Style="{StaticResource Caption}" Margin="0,4,0,0" />
@@ -29,4 +30,5 @@
             <Button DockPanel.Dock="Left" Style="{StaticResource GhostButton}" Foreground="#FF7A7A" Click="Reset_Click" Content="Rétablir l'original" />
         </DockPanel>
     </StackPanel>
+    </ScrollViewer>
 </Window>
