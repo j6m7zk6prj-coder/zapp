@@ -7,47 +7,42 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: ESPN — scoreboard, résumé, classement, équipes
+      - name: ESPN — détails
         run: |
-          B=https://site.api.espn.com/apis/site/v2/sports/soccer
           set +e
-          echo "=== diagnostic ==="
-          for U in "$B/fra.1/scoreboard" "$B/fra.1/scoreboard?dates=20261101-20261115" "https://site.web.api.espn.com/apis/site/v2/sports/soccer/fra.1/scoreboard" "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard" "https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=4334" "https://api.football-data.org/v4/competitions"; do
-            echo "--- $U"
-            curl -s -A "Mozilla/5.0" -o out.txt -w "HTTP %{http_code} %{content_type} %{size_download}o\n" "$U"
-            head -c 300 out.txt; echo
+          B=https://site.api.espn.com/apis/site/v2/sports/soccer
+          C="curl -s --compressed -A Mozilla/5.0"
+          echo "=== all/scoreboard 20261108 ==="
+          $C "$B/all/scoreboard?dates=20261108" -o all.json
+          jq -c '{keys: keys, leaguesN: (.leagues|length), leagues: [.leagues[]? | {id, slug, abbreviation, name}][0:6]}' all.json
+          jq -c '.events[0] | {keys: keys, id, date, name, season, league: .league?, uid, compKeys: (.competitions[0]|keys), status: .status.type | {state, completed, detail, shortDetail, name}, clock: .status.displayClock, broadcasts: .competitions[0].broadcasts, geo: [.competitions[0].geoBroadcasts[]? | {mkt: .market.type, media: .media.shortName, type: .type.shortName}], details: [.competitions[0].details[]? | {t: .type.text, c: .clock.displayValue, team: .team.id, a: [.athletesInvolved[]?.displayName], scoringPlay, redCard, yellowCard}][0:4], comp: [.competitions[0].competitors[] | {id, homeAway, score, winner, form, records: [.records[]?.summary], team: .team | {id, displayName, shortDisplayName, abbreviation, logo, color}}], venue: .competitions[0].venue.fullName, links: [.links[]?.href][0:1]}' all.json
+          echo "=== fra.1 dates=20261108 ==="
+          $C "$B/fra.1/scoreboard?dates=20261108" | jq -c '{n: (.events|length), d: [.events[] | {id, date, name, st: .status.type.state}]}'
+          echo "=== fra.1 dates=202611 (mois) ==="
+          $C "$B/fra.1/scoreboard?dates=202611" | jq -c '{n: (.events|length), err: .message?}'
+          EV=$(jq -r '[.events[] | select(.status.type.completed)][0].id' all.json)
+          SLUG=$(jq -r --arg ev "$EV" '.events[] | select(.id==$ev) | .uid' all.json)
+          echo "=== event $EV uid $SLUG ==="
+          for L in fra.1 eng.1 esp.1 ita.1 ger.1; do
+            $C "$B/$L/summary?event=$EV" -o sum.json
+            OK=$(jq -r 'has("boxscore")' sum.json); echo "$L summary has boxscore: $OK"
+            if [ "$OK" = "true" ]; then break; fi
           done
-          echo "=== scoreboard fra.1 (plage de dates) ==="
-          curl -s -A "Mozilla/5.0" "$B/fra.1/scoreboard?dates=20261101-20261115" -o sb.json
-          jq -c '{keys: keys, league: (.leagues[0] | {id, name, abbreviation, slug, logos: [.logos[0].href]}), n: (.events|length)}' sb.json
-          jq -c '.events[0] | {id, date, name, shortName, status: {clock: .status.displayClock, period: .status.period, type: .status.type | {state, completed, detail, shortDetail, description}}, comp: .competitions[0] | {venue: .venue.fullName, broadcasts, geoBroadcasts: [.geoBroadcasts[]? | {market: .market.type, media: .media.shortName}], details: [.details[]? | {type: .type.text, clock: .clock.displayValue, team: .team.id, athletes: [.athletesInvolved[]?.displayName]}], competitors: [.competitors[] | {id, homeAway, score, winner, form, team: .team | {id, displayName, shortDisplayName, abbreviation, logo, color}}]}}' sb.json
-          EV=$(jq -r '[.events[] | select(.status.type.completed)][0].id' sb.json)
-          echo "=== summary event $EV ==="
-          curl -s -A "Mozilla/5.0" "$B/fra.1/summary?event=$EV" -o sum.json
           jq -c 'keys' sum.json
-          jq -c '.boxscore.teams[0] | {team: .team.displayName, stats: [.statistics[] | {name, label, displayValue}]}' sum.json
-          jq -c '[.keyEvents[]? | {type: .type.text, clock: .clock.displayValue, team: .team.displayName, text: .text, short: .shortText, participants: [.participants[]?.athlete.displayName]}][0:8]' sum.json
-          jq -c '[.rosters[]? | {team: .team.displayName, formation: .formation, players: [.roster[]? | {starter, jersey, name: .athlete.displayName, pos: .position.abbreviation, subbedIn, subbedOut}][0:3]}]' sum.json
-          jq -c '.header.competitions[0] | {date, status: .status.type.detail, competitors: [.competitors[] | {homeAway, score, team: .team.displayName}]}' sum.json
-          jq -c '.standings | {keys: keys?, first: .groups[0]?.standings.entries[0]? }' sum.json | head -c 1500; echo
-          echo "=== standings ==="
-          curl -s -A "Mozilla/5.0" "https://site.api.espn.com/apis/v2/sports/soccer/fra.1/standings" -o st.json
-          jq -c '{keys: keys, childrenN: (.children|length), name: .children[0].name}' st.json
-          jq -c '.children[0].standings.entries[0] | {team: .team | {id, displayName, abbreviation, logo: .logos[0].href}, note, stats: [.stats[] | {name, abbreviation, type, displayValue}]}' st.json
-          echo "=== teams ==="
-          curl -s -A "Mozilla/5.0" "$B/fra.1/teams" -o tm.json
-          jq -c '.sports[0].leagues[0].teams[0].team | {id, displayName, shortDisplayName, abbreviation, logo: .logos[0].href, color}' tm.json
-          jq -c '.sports[0].leagues[0].teams | length' tm.json
-          TID=$(jq -r '.sports[0].leagues[0].teams[0].team.id' tm.json)
-          echo "=== team schedule $TID (fixture) ==="
-          curl -s -A "Mozilla/5.0" "$B/fra.1/teams/$TID/schedule?fixture=true" -o ts.json
-          jq -c '{keys: keys, n: (.events|length), first: .events[0] | {id, date, name, league: .league?.slug?, comps: .competitions[0].competitors[0].team.displayName}}' ts.json
-          curl -s -A "Mozilla/5.0" "$B/fra.1/teams/$TID/schedule" -o ts2.json
-          jq -c '{n: (.events|length), first: .events[0] | {id, date, name, score: [.competitions[0].competitors[] | .score]}}' ts2.json
-          echo "=== autres ligues (nb matchs sur la plage) ==="
-          for L in eng.1 esp.1 ita.1 ger.1 uefa.champions uefa.europa uefa.europa.conf fra.2 fra.coupe_de_france por.1 ned.1 fifa.world fifa.worldq.uefa uefa.nations usa.1 ksa.1 fifa.cwc eng.fa esp.copa_del_rey; do
-            N=$(curl -s -A "Mozilla/5.0" "$B/$L/scoreboard?dates=20261101-20261130" | jq '.events | length' 2>/dev/null)
-            echo "$L : $N"
+          jq -c '.boxscore.teams[] | {team: .team.displayName, logo: .team.logo, stats: [.statistics[] | {name, label, displayValue}]}' sum.json | head -c 2500; echo
+          jq -c '[.keyEvents[]? | {type: .type.text, typeId: .type.type, clock: .clock.displayValue, team: .team.displayName, short: .shortText, scoringPlay, participants: [.participants[]?.athlete.displayName]}][0:10]' sum.json | head -c 2500; echo
+          jq -c '[.rosters[]? | {team: .team.displayName, homeAway, formation, n: (.roster|length), players: [.roster[]? | {starter, jersey, name: .athlete.displayName, pos: .position.abbreviation, subbedIn, subbedOut}][0:2]}]' sum.json | head -c 1500; echo
+          jq -c '.header | {league: .league | {slug, abbreviation, name}, comp: .competitions[0] | {date, status: .status.type | {state, detail}, competitors: [.competitors[] | {homeAway, score, team: .team | {id, displayName, logo: .logos[0].href}}]}}' sum.json | head -c 1500; echo
+          jq -c '.standings.groups[0] | {header, n: (.standings.entries|length), first: .standings.entries[0] | {team, stats: [.stats[] | {name, displayValue}]}}' sum.json | head -c 1500; echo
+          jq -c '{gameInfo: .gameInfo | {venue: .venue.fullName, attendance, officials: [.officials[]?.displayName]}, broadcasts, odds: (.odds|length)?, h2h: (.headToHeadGames|length)?, news: (.news.articles|length)?}' sum.json | head -c 800; echo
+          echo "=== équipes : calendrier fixture toutes compétitions ? ==="
+          $C "$B/all/teams/160/schedule?fixture=true" | jq -c '{n: (.events|length), err: .message?, leagues: [.events[]?.league?.slug?] | unique}'
+          $C "$B/fra.1/teams/160/schedule?fixture=true" | jq -c '{n: (.events|length), sample: [.events[0:3][] | {date, name, league: .league?.abbreviation?, seasonType: .seasonType?.name?}]}'
+          echo "=== ligues : nb matchs le 20261108 / 20261105 ==="
+          for L in eng.1 esp.1 ita.1 ger.1 fra.2 uefa.champions uefa.europa uefa.europa.conf fra.coupe_de_france por.1 ned.1 bel.1 tur.1 sco.1 usa.1 ksa.1 bra.1 arg.1 mex.1 eng.2 eng.fa eng.league_cup esp.copa_del_rey ita.coppa_italia ger.dfb_pokal uefa.nations fifa.world fifa.worldq.uefa fifa.friendly uefa.euro caf.nations conmebol.libertadores fifa.cwc; do
+            A=$($C "$B/$L/scoreboard?dates=20261108" | jq -r '"\(.leagues[0].name // "?") \(.events|length)"')
+            Bv=$($C "$B/$L/scoreboard?dates=20261105" | jq -r '.events|length')
+            echo "$L : $A / $Bv"
           done
-          echo "=== scoreboard tous sports soccer/all ? ==="
-          curl -s -A "Mozilla/5.0" "$B/all/scoreboard?dates=20261109" | jq -c '{n: (.events|length)?, err: .error?}' 2>&1 | head -c 300; echo
+          echo "=== logo ligue ==="
+          $C "$B/fra.1/scoreboard" | jq -c '.leagues[0].logos'
