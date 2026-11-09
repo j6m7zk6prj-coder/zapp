@@ -85,7 +85,7 @@ struct PlayerView: View {
             }
             if let recordingNotice {
                 VStack {
-                    Label(recordingNotice, systemImage: recordingNotice.hasPrefix("Enregistré") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    Label(recordingNotice, systemImage: recordingNotice.contains("conversion") ? "arrow.triangle.2.circlepath" : recordingNotice.hasPrefix("Enregistré") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                         .multilineTextAlignment(.center)
                         .font(.footnote.weight(.semibold))
                         .padding(.horizontal, 16)
@@ -246,13 +246,19 @@ struct PlayerView: View {
     private func finishRecording() {
         guard recorder.isRecording else { return }
         recorder.stop(vlc: vlc) { result in
-            withAnimation(.snappy) {
-                switch result {
-                case .success(let file):
-                    recordingNotice = "Enregistré (\(file.sizeText)) dans Fichiers › iTv › Enregistrements"
-                case .failure(let error):
-                    recordingNotice = error.localizedDescription
+            switch result {
+            case .success(let file):
+                withAnimation(.snappy) { recordingNotice = "Enregistré (\(file.sizeText)) · conversion en MP4…" }
+                Task {
+                    let converted = await Remuxer.convertToMP4(file.url)
+                    withAnimation(.snappy) {
+                        recordingNotice = converted != nil
+                            ? "Enregistré en MP4 dans Fichiers › iTv › Enregistrements"
+                            : "Enregistré (format TS, lisible dans iTv et VLC)"
+                    }
                 }
+            case .failure(let error):
+                withAnimation(.snappy) { recordingNotice = error.localizedDescription }
             }
         }
     }

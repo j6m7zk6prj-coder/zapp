@@ -65,7 +65,9 @@ final class StreamRecorder {
             self.startedAt = nil
             self.task = nil
             switch self.store(outcome) {
-            case .success(let file): self.failure = "Enregistrement terminé (\(file.sizeText)) : le flux s'est arrêté."
+            case .success(let file):
+                self.failure = "Enregistrement terminé (\(file.sizeText)) : le flux s'est arrêté."
+                Task { _ = await Remuxer.convertToMP4(file.url) }
             case .failure(let error): self.failure = error.localizedDescription
             }
         }
