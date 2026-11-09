@@ -96,7 +96,8 @@ jobs:
         run: |
           BIG=$(find out/ZappTV -type f -size +95M)
           if [ -n "$BIG" ]; then echo "Fichier trop gros pour GitHub : $BIG"; exit 1; fi
-          cd out
+          mkdir branch && cp -r out/ZappTV branch/
+          cd branch
           cat > README.md <<'MD'
           # Zapp TV pour Windows — app prête à lancer
 
