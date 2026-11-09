@@ -72,7 +72,7 @@ public partial class LinksPage : UserControl
     private void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (LinkOf(sender) is not { } link) return;
-        var answer = MessageBox.Show(Window.GetWindow(this)!, $"Supprimer « {link.Name} » ?", "Zapp TV",
+        var answer = MessageBox.Show(Window.GetWindow(this)!, $"Supprimer « {link.Name} » ?", "Lumio",
             MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (answer == MessageBoxResult.Yes) Services.Customization.DeleteLink(link);
     }

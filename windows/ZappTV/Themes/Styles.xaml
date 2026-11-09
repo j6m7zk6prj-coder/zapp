@@ -4,6 +4,9 @@
     <!-- Les couleurs du thème (BgBrush, AccentBrush…) sont posées par ThemeManager au démarrage. -->
 
     <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <!-- Titres d'accent en italique (style « éditorial ») -->
+    <FontFamily x:Key="DisplaySerif">Georgia, Cambria, Times New Roman</FontFamily>
+    <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9EFFFFFF" />
     <SolidColorBrush x:Key="HairlineBrush" Color="#1AFFFFFF" />
@@ -17,12 +20,14 @@
     </Style>
 
     <Style x:Key="PageTitle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="34" />
-        <Setter Property="FontWeight" Value="Black" />
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+        <Setter Property="FontSize" Value="36" />
+        <Setter Property="FontWeight" Value="Bold" />
     </Style>
 
     <Style x:Key="SectionTitle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+        <Setter Property="FontSize" Value="21" />
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="Margin" Value="0,34,0,6" />
     </Style>

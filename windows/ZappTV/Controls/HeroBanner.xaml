@@ -1,7 +1,7 @@
 <UserControl x:Class="ZappTV.Controls.HeroBanner"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Height="400">
+             Height="460">
     <Grid x:Name="Root" SizeChanged="Root_SizeChanged" MouseEnter="Root_MouseEnter" MouseLeave="Root_MouseLeave">
         <Border x:Name="Fallback" />
         <Image x:Name="Backdrop" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality">
@@ -36,10 +36,19 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel MaxWidth="640" HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                <TextBlock x:Name="KindText" Foreground="{DynamicResource AccentBrush}" FontWeight="Black" FontSize="13" />
-                <TextBlock x:Name="TitleText" FontSize="42" FontWeight="Black" TextWrapping="Wrap" MaxHeight="112"
-                           TextTrimming="CharacterEllipsis" Margin="0,6,0,4" />
+                <Border HorizontalAlignment="Left" Background="#26FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="100" Padding="12,5">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="7" Height="7" Fill="{DynamicResource AccentBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock x:Name="KindText" FontWeight="SemiBold" FontSize="12" />
+                    </StackPanel>
+                </Border>
+                <Image x:Name="TitleLogo" MaxHeight="120" MaxWidth="460" HorizontalAlignment="Left" Stretch="Uniform" Margin="0,16,0,10"
+                       Visibility="Collapsed" RenderOptions.BitmapScalingMode="HighQuality" />
+                <TextBlock x:Name="TitleText" FontFamily="{StaticResource DisplayFont}" FontSize="46" FontWeight="Bold" TextWrapping="Wrap" MaxHeight="120"
+                           TextTrimming="CharacterEllipsis" Margin="0,12,0,6" />
                 <TextBlock x:Name="SubtitleText" Foreground="#C7FFFFFF" FontSize="15" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="OverviewText" Foreground="#B3FFFFFF" FontSize="14" TextWrapping="Wrap" MaxHeight="42" LineHeight="21"
+                           TextTrimming="WordEllipsis" Margin="0,10,0,0" Visibility="Collapsed" />
                 <StackPanel Orientation="Horizontal" Margin="0,22,0,0">
                     <Button Style="{StaticResource PrimaryButton}" Click="Play_Click">
                         <StackPanel Orientation="Horizontal">

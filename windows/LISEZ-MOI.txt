@@ -1,7 +1,7 @@
-ZAPP TV POUR WINDOWS
-====================
+LUMIO POUR WINDOWS
+==================
 
-Lancer : double-clic sur ZappTV.exe (garde tous les fichiers du dossier ensemble).
+Lancer : double-clic sur Lumio.exe (garde tous les fichiers du dossier ensemble).
 
 Si Windows affiche « Windows a protégé votre ordinateur » :
 cliquer sur « Informations complémentaires » puis « Exécuter quand même ».
@@ -13,7 +13,14 @@ Ajouter du contenu
 - Une playlist : bouton « Ajouter » → « Ajouter une playlist » (URL M3U, fichier M3U, Xtream Codes),
   ou glisse un fichier .m3u dans la fenêtre.
 
-Nouveautés de la version 2.0
+Nouveautés de la version 3.0 (Zapp TV devient Lumio)
+- Nouveau nom, nouveau logo, interface plus premium.
+- Fiches films et séries façon Netflix (TMDB) : grande image, note, résumé, acteurs, bande-annonce,
+  et « Tendances dans ta playlist ». Il faut une clé TMDB gratuite : Réglages → Fiches films et séries.
+- Épisode suivant automatique (compte à rebours de 10 s, touche N).
+- Enregistrer un flux : bouton ⏺ ou touche R dans le lecteur (fichiers dans Vidéos\Lumio, usage privé).
+
+Version 2.0
 - Navigation en onglets en haut : Pour toi · Direct · Films · Séries · Foot · Mes liens (Ctrl+1 à 6).
 - Onglet Foot : matchs du jour par compétition, filtres (mes équipes, en direct), classements,
   fiche match (score en direct, buteurs, statistiques, compositions) et fiche équipe (calendrier, forme).
@@ -32,6 +39,6 @@ Raccourcis
 
 Clic droit sur une chaîne ou un film : lire, favori, modifier (nom, logo, catégorie), masquer.
 
-Tes données (liens, playlists, favoris, logos, réglages) sont dans %APPDATA%\ZappTV.
+Tes données (liens, playlists, favoris, logos, réglages) sont dans %APPDATA%\ZappTV (gardées en passant à Lumio).
 
-Zapp TV ne fournit aucun contenu. Utilise uniquement des flux auxquels tu as légalement accès.
+Lumio ne fournit aucun contenu. Utilise uniquement des flux auxquels tu as légalement accès.

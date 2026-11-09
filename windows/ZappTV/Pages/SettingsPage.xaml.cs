@@ -14,7 +14,7 @@ public partial class SettingsPage : UserControl
     {
         InitializeComponent();
         var version = Assembly.GetExecutingAssembly().GetName().Version;
-        VersionText.Text = $"Zapp TV pour Windows — version {version?.ToString(3) ?? "1.0.0"}";
+        VersionText.Text = $"Lumio pour Windows — version {version?.ToString(3) ?? "1.0.0"}";
         BuildShortcuts();
 
         Loaded += (_, _) =>
@@ -43,6 +43,7 @@ public partial class SettingsPage : UserControl
         BuildPlaylists();
         BuildProfile();
         BuildHome();
+        BuildTmdb();
         BuildFoot();
         BuildPlayer();
         BuildAppearance();
@@ -91,7 +92,7 @@ public partial class SettingsPage : UserControl
             var delete = new Button { Style = (Style)FindResource("IconButton"), Content = UiFactory.Icon(""), ToolTip = "Supprimer", Margin = new Thickness(10, 0, 0, 0), Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x7A, 0x7A)) };
             delete.Click += (_, _) =>
             {
-                var answer = MessageBox.Show(Window.GetWindow(this)!, $"Supprimer la playlist « {playlist.Name} » ?", "Zapp TV", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                var answer = MessageBox.Show(Window.GetWindow(this)!, $"Supprimer la playlist « {playlist.Name} » ?", "Lumio", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer == MessageBoxResult.Yes) Services.Playlists.Remove(playlist);
             };
             actions.Children.Add(delete);
@@ -262,6 +263,8 @@ public partial class SettingsPage : UserControl
             ("← →", "Reculer / avancer de 10 s (films)"),
             ("F ou double-clic", "Plein écran"),
             ("M · L · Échap", "Muet · liste des chaînes · quitter"),
+            ("R", "Enregistrer le flux / arrêter"),
+            ("N", "Épisode suivant"),
         };
         foreach (var (keys, action) in shortcuts)
         {

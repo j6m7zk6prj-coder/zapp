@@ -178,7 +178,7 @@ public static class AppearanceExtensions
     /// <summary>(fond, surface, surface haute, lueur) en 0xRRGGBB.</summary>
     public static (uint Base, uint Surface, uint SurfaceHigh, uint Glow) Palette(this BackgroundStyle style) => style switch
     {
-        BackgroundStyle.Night => (0x0A0D17, 0x141827, 0x1F2436, 0x182050),
+        BackgroundStyle.Night => (0x07070C, 0x121220, 0x1C1C2E, 0x2A1858),
         BackgroundStyle.Oled => (0x000000, 0x111113, 0x1C1C1F, 0x0B0B0D),
         BackgroundStyle.Graphite => (0x141518, 0x202126, 0x2C2E35, 0x26282F),
         BackgroundStyle.Ocean => (0x05161F, 0x0C2430, 0x143443, 0x0B3A4E),
@@ -205,7 +205,7 @@ public static class AppearanceExtensions
 
 public sealed class AppSettingsData
 {
-    public const uint DefaultAccent = 0x4F6BFF;
+    public const uint DefaultAccent = 0x7C5CFF;
 
     public uint Accent { get; set; } = DefaultAccent;
     public BackgroundStyle Background { get; set; } = BackgroundStyle.Night;
@@ -231,6 +231,14 @@ public sealed class AppSettingsData
     public int NetworkCacheMs { get; set; } = 1500;
     public bool ResumePlayback { get; set; } = true;
     public bool PlayerStartsFullscreen { get; set; }
+    public bool AutoPlayNext { get; set; } = true;
+
+    /// <summary>Version du thème : passage au style Lumio pour les anciens réglages.</summary>
+    public int ThemeVersion { get; set; }
+
+    // Fiches films et séries
+    /// <summary>Clé d'API TMDB (v3) ou jeton de lecture (v4) fourni par l'utilisateur.</summary>
+    public string TmdbKey { get; set; } = "";
 
     /// <summary>Sections de l'accueil dans l'ordre choisi, complétées avec celles qui manquent.</summary>
     public List<HomeSectionPref> OrderedHomeSections()
@@ -256,7 +264,7 @@ public sealed class AppSettingsData
 
     public static readonly (string Name, uint Hex)[] AccentPresets =
     [
-        ("Bleu", 0x4F6BFF), ("Indigo", 0x7462FF), ("Violet", 0xA65CF6), ("Rose", 0xF0458A),
+        ("Lumio", 0x7C5CFF), ("Bleu", 0x4F6BFF), ("Indigo", 0x5B5BF0), ("Violet", 0xA65CF6), ("Rose", 0xF0458A),
         ("Rouge", 0xF2414B), ("Orange", 0xFF8A1F), ("Jaune", 0xF5C518), ("Vert", 0x2FCB6B),
         ("Turquoise", 0x19C3C3), ("Blanc", 0xEDEDF2),
     ];
@@ -273,6 +281,7 @@ public static class HomeSectionCatalog
     public static readonly IReadOnlyList<(string Key, string Title, bool DefaultVisible)> All =
     [
         ("hero", "Bannière à la une", true),
+        ("trending", "Tendances dans ta playlist", true),
         ("continue", "Reprendre la lecture", true),
         ("foot", "Matchs à suivre", true),
         ("results", "Derniers résultats", true),

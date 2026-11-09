@@ -233,10 +233,110 @@ public partial class SettingsPage
         PlayerSection.Children.Clear();
         PlayerSection.Children.Add(Group(
             Toggle("Reprendre là où je me suis arrêté", "Films et épisodes repartent à la dernière position.", Data.ResumePlayback, (s, v) => s.ResumePlayback = v),
+            Toggle("Épisode suivant automatique", "À la fin d'un épisode, le suivant démarre après 10 s (annulable).", Data.AutoPlayNext, (s, v) => s.AutoPlayNext = v),
             Toggle("Ouvrir le lecteur en plein écran", null, Data.PlayerStartsFullscreen, (s, v) => s.PlayerStartsFullscreen = v),
             Toggle("Décodage matériel", "Plus fluide et moins gourmand. Désactive-le si l'image saccade ou reste noire.", Data.HardwareDecoding, (s, v) => s.HardwareDecoding = v),
             Choices<int>("Mémoire tampon réseau", "Plus elle est grande, moins ça coupe, mais le direct a plus de retard.",
                 [(800, "Faible"), (1500, "Normale"), (3000, "Grande"), (6000, "Très grande")],
-                Data.NetworkCacheMs, (s, v) => s.NetworkCacheMs = v)));
+                Data.NetworkCacheMs, (s, v) => s.NetworkCacheMs = v),
+            Row("Enregistrements", "Bouton ⏺ ou touche R dans le lecteur. Fichiers .ts dans Vidéos\\Lumio. Usage privé uniquement.",
+                ActionButton("Ouvrir le dossier", OpenRecordings))));
+    }
+
+    private static void OpenRecordings()
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(ZappTV.Player.PlayerWindow.RecordingsFolder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"\"{ZappTV.Player.PlayerWindow.RecordingsFolder}\"") { UseShellExecute = true });
+        }
+        catch
+        {
+            MainWindow.Instance.ShowToast(ZappTV.Player.PlayerWindow.RecordingsFolder);
+        }
+    }
+
+    // ── TMDB ──────────────────────────────────────────────────────────────
+
+    private void BuildTmdb()
+    {
+        TmdbSection.Children.Clear();
+        var hasKey = Data.TmdbKey.Trim().Length > 0;
+        var intro = new TextBlock
+        {
+            Text = hasKey
+                ? "Fiches activées : affiches HD, note, résumé, distribution, bande-annonce et tendances de la semaine présentes dans ta playlist."
+                : "Ajoute une clé TMDB gratuite pour avoir des fiches comme sur Netflix : grandes images, note, résumé, acteurs, bande-annonce, tendances.",
+            Style = (Style)FindResource("Caption"),
+        };
+        TmdbSection.Children.Add(intro);
+
+        var box = new TextBox { Style = (Style)FindResource("Field"), Text = Data.TmdbKey, Tag = "Clé d'API (v3) ou jeton de lecture (v4)", MinWidth = 420 };
+        var status = new TextBlock { Style = (Style)FindResource("Caption"), FontSize = 12, Margin = new Thickness(2, 8, 0, 0) };
+        var save = ActionButton("Enregistrer et tester", async () =>
+        {
+            var key = box.Text.Trim();
+            if (key.Length == 0)
+            {
+                Services.Settings.Update(s => s.TmdbKey = "");
+                return;
+            }
+            status.Text = "Vérification de la clé…";
+            var ok = await new ZappTV.Core.Tmdb.TmdbClient(key).ValidateAsync();
+            if (!ok)
+            {
+                status.Text = "Clé refusée par TMDB (ou pas de connexion). Vérifie-la et réessaie.";
+                return;
+            }
+            Services.Settings.Update(s => s.TmdbKey = key);
+            MainWindow.Instance.ShowToast("Clé TMDB enregistrée : les fiches sont activées.");
+        }, "AccentButton");
+        save.Margin = new Thickness(10, 0, 0, 0);
+        var line = new DockPanel();
+        DockPanel.SetDock(save, Dock.Right);
+        line.Children.Add(save);
+        line.Children.Add(box);
+
+        var help = new TextBlock
+        {
+            Text = "Obtenir une clé (gratuit, 2 minutes) : crée un compte sur themoviedb.org → Paramètres → API → « Créer » → type « Développeur », usage personnel → copie la « Clé d'API » ici.",
+            Style = (Style)FindResource("Caption"),
+            FontSize = 12,
+            Margin = new Thickness(2, 10, 0, 0),
+        };
+        var open = ActionButton("Ouvrir themoviedb.org", () =>
+        {
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://www.themoviedb.org/settings/api") { UseShellExecute = true }); }
+            catch { MainWindow.Instance.ShowToast("https://www.themoviedb.org/settings/api"); }
+        });
+        open.HorizontalAlignment = HorizontalAlignment.Left;
+        open.Margin = new Thickness(0, 10, 0, 0);
+
+        var panel = new StackPanel();
+        panel.Children.Add(line);
+        panel.Children.Add(status);
+        panel.Children.Add(help);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+        buttons.Children.Add(open);
+        if (hasKey)
+        {
+            var clear = ActionButton("Vider le cache des fiches", () =>
+            {
+                Services.ClearTmdbCache();
+                MainWindow.Instance.ShowToast("Cache des fiches vidé.");
+            });
+            clear.Margin = new Thickness(10, 10, 0, 0);
+            buttons.Children.Add(clear);
+        }
+        panel.Children.Add(buttons);
+        var source = new TextBlock
+        {
+            Text = "Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.",
+            Style = (Style)FindResource("Caption"),
+            FontSize = 11,
+            Margin = new Thickness(2, 12, 0, 4),
+        };
+        panel.Children.Add(source);
+        TmdbSection.Children.Add(Group(panel));
     }
 }

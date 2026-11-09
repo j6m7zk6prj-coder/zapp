@@ -30,10 +30,19 @@ public static class ThemeManager
         resources["AccentColor"] = accent;
         resources["AccentBrush"] = Frozen(new SolidColorBrush(accent));
         resources["OnAccentBrush"] = Frozen(new SolidColorBrush(IsLight(settings.Accent) ? Colors.Black : Colors.White));
+        // Accent adouci (mélangé au blanc) pour les mots en italique.
+        resources["AccentSoftBrush"] = Frozen(new SolidColorBrush(Color.FromRgb(
+            (byte)((accent.R + 255 * 2) / 3), (byte)((accent.G + 255 * 2) / 3), (byte)((accent.B + 255 * 2) / 3))));
+        resources["TopBarBrush"] = Frozen(new SolidColorBrush(Color.FromArgb(0xF2, bg.R, bg.G, bg.B)));
 
-        resources["BackdropBrush"] = Frozen(new LinearGradientBrush(
-            [new GradientStop(glow, 0), new GradientStop(bg, 0.42), new GradientStop(bg, 1)],
-            new Point(0, 0), new Point(0, 1)));
+        resources["BackdropBrush"] = Frozen(new RadialGradientBrush(
+            [new GradientStop(glow, 0), new GradientStop(Color.FromArgb(0x80, glow.R, glow.G, glow.B), 0.35), new GradientStop(bg, 1)])
+        {
+            Center = new Point(0.15, 0),
+            GradientOrigin = new Point(0.15, 0),
+            RadiusX = 0.9,
+            RadiusY = 0.75,
+        });
         resources["FadeBottomBrush"] = Frozen(new LinearGradientBrush(
             [new GradientStop(Color.FromArgb(0, bg.R, bg.G, bg.B), 0), new GradientStop(Color.FromArgb(200, bg.R, bg.G, bg.B), 0.6), new GradientStop(bg, 1)],
             new Point(0, 0), new Point(0, 1)));

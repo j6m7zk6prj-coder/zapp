@@ -136,7 +136,7 @@ public partial class LinkEditorWindow : Window
     private void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (_existing is null) return;
-        if (MessageBox.Show(this, $"Supprimer « {_existing.Name} » ?", "Zapp TV", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        if (MessageBox.Show(this, $"Supprimer « {_existing.Name} » ?", "Lumio", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         Services.Customization.DeleteLink(_existing);
         _saved = true;
         DialogResult = true;

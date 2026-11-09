@@ -5,7 +5,7 @@ Lecteur IPTV moderne façon Apple TV : chaînes en direct avec zapping, films, s
 | Plateforme | Technologie | Télécharger |
 |---|---|---|
 | iPhone / iPad | SwiftUI + VLC | [Dernière IPA](../../releases/latest) (à installer avec Sideloadly / AltStore) |
-| Windows 10 / 11 | C# WPF + VLC | [ZappTV-Windows-x64.zip](../../releases/download/windows-latest/ZappTV-Windows-x64.zip) ou la branche [`app-windows`](../../tree/app-windows) (dézipper, lancer `ZappTV.exe`) |
+| Windows 10 / 11 | C# WPF + VLC | [Lumio.exe](../../releases/download/windows-latest/Lumio.exe) ou la branche [`app-windows`](../../tree/app-windows) (sur PC l'app s'appelle désormais **Lumio**) |
 
 > Zapp est **uniquement un lecteur**. Il ne fournit aucune chaîne ni aucun contenu. Utilise seulement des playlists auxquelles tu as légalement accès.
 
@@ -98,6 +98,7 @@ Le dossier [`windows/`](windows) contient l'app PC (.NET 10, WPF, LibVLCSharp) :
 - même contenu que sur iPhone : liens perso, playlists M3U / Xtream, favoris, modifications, thème ;
 - interface adaptée au PC : onglets en pastilles (Pour toi, Direct, Films, Séries, Foot, Mes liens), survol à la souris, clic droit, glisser-déposer d'un `.m3u` ou d'un lien ;
 - **Foot (v2.0)** : calendrier des compétitions suivies, scores en direct, fiches match (buteurs, statistiques, compositions), classements, fiches équipe, et « Où regarder » qui relie chaque compétition à son diffuseur et aux chaînes de ta playlist (données publiques ESPN, diffuseurs modifiables) ;
+- **v3.0 « Lumio »** : nouveau nom et design, fiches TMDB (affiches, notes, distribution, bandes-annonces, tendances), épisode suivant automatique, enregistrement d'un flux ;
 - profils (favoris, historique, ligues et équipes par personne), « Reprendre la lecture », chaînes récentes, accueil personnalisable, mode anti-spoiler ;
 - raccourcis : Ctrl+V coller un lien, Ctrl+F rechercher, F5 actualiser ; dans le lecteur Espace, ↑ ↓ zapping, ← → ±10 s, F plein écran ;
 - `ZappTV.Core` (parser M3U, Xtream, bibliothèque, données foot, profils) est testé à chaque push (`windows/ZappTV.Tests`).

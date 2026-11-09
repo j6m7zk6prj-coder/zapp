@@ -1,4 +1,5 @@
 using System.Windows;
+using ZappTV.Core;
 using System.Windows.Input;
 using System.Windows.Threading;
 using ZappTV.Player;
@@ -14,6 +15,15 @@ public partial class App : Application
 
         LibVLCSharp.Shared.Core.Initialize();
         Services.Initialize();
+        if (Services.Settings.Data.ThemeVersion < 2)
+        {
+            // Passage à Lumio : l'ancien bleu par défaut devient le violet Lumio.
+            Services.Settings.Update(s =>
+            {
+                if (s.Accent == 0x4F6BFF) s.Accent = AppSettingsData.DefaultAccent;
+                s.ThemeVersion = 2;
+            }, notify: false);
+        }
         ThemeManager.Apply(Services.Settings.Data);
         Services.Settings.Changed += () => ThemeManager.Apply(Services.Settings.Data);
 
@@ -32,7 +42,7 @@ public partial class App : Application
     {
         MessageBox.Show(
             $"Une erreur inattendue s'est produite :\n\n{e.Exception.Message}",
-            "Zapp TV", MessageBoxButton.OK, MessageBoxImage.Warning);
+            "Lumio", MessageBoxButton.OK, MessageBoxImage.Warning);
         e.Handled = true;
     }
 }

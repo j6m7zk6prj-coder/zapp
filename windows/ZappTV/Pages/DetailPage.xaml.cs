@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ZappTV.Core;
+using ZappTV.Core.Tmdb;
 using ZappTV.Player;
 
 namespace ZappTV.Pages;
@@ -14,6 +15,8 @@ public partial class DetailPage : UserControl
     private SeriesDetail? _series;
     private bool _seriesRequested;
     private int _season = 1;
+    private TmdbInfo? _tmdb;
+    private bool _tmdbRequested;
 
     public DetailPage(MediaItem item)
     {
@@ -33,23 +36,50 @@ public partial class DetailPage : UserControl
         var isLive = item.Kind == MediaKind.Live;
         var image = ImageUrlConverter.Load(item.LogoUrl, isLive ? 500 : 700);
 
+        if (!isLive && !_tmdbRequested && Services.Tmdb != null) _ = LoadTmdbAsync(item);
+        var tmdb = _tmdb;
+
         KindText.Text = item.Kind.Label();
-        TitleText.Text = item.Name;
-        var meta = new List<string> { item.Group };
-        if (item.Rating is > 0) meta.Add($"★ {item.Rating:0.0}");
-        if (_series?.Genre is { Length: > 0 } genre) meta.Add(genre);
-        if (_series is { } detail && detail.Seasons.Count > 0)
-            meta.Add(detail.Seasons.Count == 1 ? "1 saison" : $"{detail.Seasons.Count} saisons");
+        TitleText.Text = tmdb?.Title is { Length: > 0 } tmdbTitle ? tmdbTitle : item.Name;
+        var titleLogo = ImageUrlConverter.Load(tmdb?.Logo, 900);
+        TitleLogo.Source = titleLogo;
+        TitleLogo.Visibility = titleLogo != null ? Visibility.Visible : Visibility.Collapsed;
+        TitleText.Visibility = titleLogo != null ? Visibility.Collapsed : Visibility.Visible;
+        TaglineText.Text = tmdb?.Tagline ?? "";
+        TaglineText.Visibility = tmdb?.Tagline != null ? Visibility.Visible : Visibility.Collapsed;
+
+        var meta = new List<string>();
+        if (tmdb?.Year is { } year) meta.Add(year.ToString());
+        if (tmdb is { Runtime.Length: > 0 }) meta.Add(tmdb.Runtime);
+        if (tmdb?.Genres.Count > 0) meta.Add(string.Join(", ", tmdb.Genres.Take(3)));
+        else if (_series?.Genre is { Length: > 0 } genre) meta.Add(genre);
+        var rating = tmdb?.Rating ?? item.Rating;
+        if (rating is > 0) meta.Add($"★ {rating:0.0}");
+        var seasons = _series?.Seasons.Count ?? tmdb?.Seasons ?? 0;
+        if (seasons > 0) meta.Add(seasons == 1 ? "1 saison" : $"{seasons} saisons");
+        if (meta.Count == 0 || tmdb is null) meta.Insert(0, item.Group);
         MetaText.Text = string.Join("  ·  ", meta);
 
         BackdropFallback.Background = ThemeManager.GradientFor(item.Name);
-        Backdrop.Source = image;
+        var backdrop = ImageUrlConverter.Load(tmdb?.Backdrop, 1600);
+        Backdrop.Source = backdrop ?? image;
+        // Image TMDB nette et grande, image de playlist floutée.
+        Backdrop.Effect = backdrop != null ? null : new System.Windows.Media.Effects.BlurEffect { Radius = 60 };
+        Backdrop.Opacity = backdrop != null ? 0.85 : 0.65;
+        BackdropArea.Height = backdrop != null ? 700 : 600;
+        TrailerButton.Visibility = tmdb?.TrailerUrl != null ? Visibility.Visible : Visibility.Collapsed;
+        BuildCast(tmdb);
+        if (tmdb?.Overview is { } overview && string.IsNullOrWhiteSpace(_series?.Plot))
+        {
+            PlotText.Text = overview;
+            PlotText.Visibility = Visibility.Visible;
+        }
 
         ArtBox.Width = isLive ? 320 : 230;
         ArtBox.Height = isLive ? 180 : 345;
         ArtFallback.Background = ThemeManager.GradientFor(item.Name);
         ArtInitials.Text = item.Initials;
-        ArtBrush.ImageSource = isLive ? null : image;
+        ArtBrush.ImageSource = isLive ? null : ImageUrlConverter.Load(tmdb?.Poster, 600) ?? image;
         ArtLogo.Source = isLive ? image : null;
         ArtLogoBox.Visibility = isLive && image != null ? Visibility.Visible : Visibility.Collapsed;
 
@@ -77,6 +107,12 @@ public partial class DetailPage : UserControl
             rows.Add(("Format", LinkInspector.Format(url).Label()));
             rows.Add(("Lecteur", "VLC (tous formats)"));
         }
+        if (_tmdb is { } tmdb)
+        {
+            if (tmdb.OriginalTitle is { } original) rows.Insert(0, ("Titre original", original));
+            if (tmdb.Director is { } director) rows.Insert(0, (tmdb.Kind == TmdbKind.Movie ? "Réalisation" : "Création", director));
+            if (tmdb.Votes is > 0 and var votes && tmdb.Rating is { } r) rows.Add(("Note TMDB", $"{r:0.0} / 10 ({votes:N0} votes)"));
+        }
         rows.Add(("Source", item.IsCustomLink ? "Lien ajouté à la main" : "Playlist"));
         if (Services.Customization.Overrides.ContainsKey(item.Id)) rows.Add(("Modifié", "Oui (nom, logo ou catégorie)"));
 
@@ -91,6 +127,67 @@ public partial class DetailPage : UserControl
             row.Children.Add(new TextBlock { Text = value, FontSize = 14, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Right });
             InfoRows.Children.Add(row);
             if (i < rows.Count - 1) InfoRows.Children.Add(new Border { Height = 1, Background = (Brush)FindResource("HairlineBrush") });
+        }
+    }
+
+    // ── TMDB ──────────────────────────────────────────────────────────────
+
+    private async Task LoadTmdbAsync(MediaItem item)
+    {
+        _tmdbRequested = true;
+        try
+        {
+            _tmdb = await Services.Tmdb!.FindAsync(item.Name, item.Kind);
+        }
+        catch
+        {
+            // Pas de fiche : on garde les infos de la playlist.
+        }
+        if (_tmdb != null && IsLoaded) Refresh();
+    }
+
+    private void BuildCast(TmdbInfo? tmdb)
+    {
+        CastList.Children.Clear();
+        if (tmdb is null || tmdb.Cast.Count == 0)
+        {
+            CastSection.Visibility = Visibility.Collapsed;
+            return;
+        }
+        CastSection.Visibility = Visibility.Visible;
+        foreach (var person in tmdb.Cast)
+        {
+            var photo = new Border
+            {
+                Width = 96,
+                Height = 96,
+                CornerRadius = new CornerRadius(48),
+                Background = ThemeManager.GradientFor(person.Name),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Child = new TextBlock { Text = TextUtil.Initials(person.Name), FontSize = 24, FontWeight = FontWeights.Black, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+            };
+            if (ImageUrlConverter.Load(person.Photo, 200) is { } image)
+                photo.Background = new ImageBrush(image) { Stretch = Stretch.UniformToFill };
+            if (photo.Background is ImageBrush) photo.Child = null;
+            var panel = new StackPanel { Width = 116, Margin = new Thickness(0, 0, 14, 0) };
+            panel.Children.Add(photo);
+            panel.Children.Add(new TextBlock { Text = person.Name, FontSize = 13, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 2) });
+            if (person.Character is { Length: > 0 } character)
+                panel.Children.Add(new TextBlock { Text = character, FontSize = 12, Foreground = (Brush)FindResource("TextSecondaryBrush"), TextAlignment = TextAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+            CastList.Children.Add(panel);
+        }
+    }
+
+    private void Trailer_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tmdb?.TrailerUrl is not { } url) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch
+        {
+            MainWindow.Instance.ShowToast("Impossible d'ouvrir le navigateur.");
         }
     }
 
@@ -153,10 +250,12 @@ public partial class DetailPage : UserControl
         var episodes = _series.Episodes.Where(e => e.Season == _season).ToList();
         EpisodesStatus.Text = episodes.Count == 0 ? "Aucun épisode." : $"{episodes.Count} épisode(s)";
         EpisodesList.Children.Clear();
-        var queue = episodes.Select(e => e.ToPlayable(_item.Name)).ToList();
-        for (var i = 0; i < episodes.Count; i++)
+        // File de lecture de toute la série : l'épisode suivant enchaîne même d'une saison à l'autre.
+        var all = AllEpisodes();
+        var queue = all.Select(e => e.ToPlayable(_item.Name)).ToList();
+        foreach (var episode in episodes)
         {
-            EpisodesList.Children.Add(EpisodeRow(episodes[i], queue, i));
+            EpisodesList.Children.Add(EpisodeRow(episode, queue, all.IndexOf(episode)));
         }
     }
 
@@ -228,12 +327,20 @@ public partial class DetailPage : UserControl
         if (_item.OpensDetail)
         {
             if (_series is null) return;
-            var episodes = _series.Episodes.Where(ep => ep.Season == _season).Select(ep => ep.ToPlayable(_item.Name)).ToList();
-            if (episodes.Count > 0) PlayerWindow.Open(episodes, 0);
+            var all = AllEpisodes();
+            if (all.Count == 0) return;
+            var queue = all.Select(ep => ep.ToPlayable(_item.Name)).ToList();
+            // Reprend au dernier épisode commencé, sinon au début de la saison affichée.
+            var resume = queue.FindIndex(p => Services.Profiles.HistoryFor(p.Id) is { CanResume: true });
+            var start = resume >= 0 ? resume : Math.Max(0, all.FindIndex(ep => ep.Season == _season));
+            PlayerWindow.Open(queue, start);
             return;
         }
         Actions.PlayItem(_item, [_item]);
     }
+
+    private List<Episode> AllEpisodes() =>
+        _series?.Episodes.OrderBy(e => e.Season).ThenBy(e => e.Number).ToList() ?? [];
 
     private void Fav_Click(object sender, RoutedEventArgs e) => Services.Favorites.Toggle(_item.Id);
     private void Edit_Click(object sender, RoutedEventArgs e) => Actions.Edit(_item);

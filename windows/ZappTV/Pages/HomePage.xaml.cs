@@ -4,6 +4,7 @@ using System.Windows.Media;
 using ZappTV.Controls;
 using ZappTV.Core;
 using ZappTV.Core.Football;
+using ZappTV.Core.Tmdb;
 using ZappTV.Foot;
 using ZappTV.Player;
 
@@ -17,6 +18,9 @@ public partial class HomePage : UserControl
     private bool _footLoading;
     private DateTime _footLoadedAt;
     private string _footKey = "";
+    private List<(MediaItem Item, TmdbTrend Trend)>? _trending;
+    private bool _trendingLoading;
+    private int _trendingLibraryCount = -1;
 
     public HomePage()
     {
@@ -46,7 +50,15 @@ public partial class HomePage : UserControl
         var sections = Services.Settings.Data.OrderedHomeSections().Where(s => s.Visible).Select(s => s.Key).ToList();
 
         Hero.Visibility = sections.Contains("hero") ? Visibility.Visible : Visibility.Collapsed;
-        if (sections.Contains("hero")) Hero.SetItems(Featured());
+        if ((sections.Contains("hero") || sections.Contains("trending")) && Services.Tmdb != null && (_trending is null || _trendingLibraryCount != library.Items.Count)) LoadTrendingAsync();
+        if (sections.Contains("hero"))
+        {
+            var trends = _trending?.Where(t => t.Trend.Backdrop != null).Take(6).ToList();
+            if (trends is { Count: > 0 })
+                Hero.SetItems(trends.Select(t => t.Item).ToList(), trends.ToDictionary(t => t.Item.Id, t => t.Trend));
+            else
+                Hero.SetItems(Featured());
+        }
         Sections.Children.Clear();
         if (!sections.Contains("hero")) Sections.Children.Add(new Border { Height = 24 });
 
@@ -71,6 +83,10 @@ public partial class HomePage : UserControl
         var library = Services.Library;
         switch (key)
         {
+            case "trending":
+                return _trending is { Count: > 0 } trending
+                    ? new ShelfView("Tendances dans ta playlist", trending.Select(t => t.Item).Take(30).ToList(), null, landscape: false)
+                    : null;
             case "continue":
                 var resume = Services.Profiles.ContinueWatching();
                 return resume.Count > 0 ? ContinueShelf(resume) : null;
@@ -101,6 +117,28 @@ public partial class HomePage : UserControl
             default:
                 return null;
         }
+    }
+
+    // ── Tendances (TMDB) ──────────────────────────────────────────────────
+
+    private async void LoadTrendingAsync()
+    {
+        if (_trendingLoading) return;
+        _trendingLoading = true;
+        _trendingLibraryCount = Services.Library.Items.Count;
+        try
+        {
+            _trending = await Services.TrendingInPlaylistAsync();
+        }
+        catch
+        {
+            _trending = [];
+        }
+        finally
+        {
+            _trendingLoading = false;
+        }
+        if (IsLoaded) Refresh();
     }
 
     // ── Foot ──────────────────────────────────────────────────────────────

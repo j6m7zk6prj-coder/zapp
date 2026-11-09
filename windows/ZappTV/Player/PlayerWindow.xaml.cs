@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using ZappTV.Core;
 using Vlc = LibVLCSharp.Shared;
@@ -36,6 +37,10 @@ public partial class PlayerWindow : Window
     private WindowState _restoreState;
     private Point _lastMouse;
     private long _resumeAt;
+    private string? _recordPath;
+    private DateTime _recordStartedAt;
+    private readonly DispatcherTimer _nextTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private int _countdown;
     private DateTime _lastRecord;
 
     /// <summary>Ouvre le lecteur (ou réutilise celui déjà ouvert) sur une file de lecture.</summary>
@@ -97,11 +102,14 @@ public partial class PlayerWindow : Window
         _uiTimer.Tick += (_, _) => RefreshProgress();
         _uiTimer.Start();
         _hideTimer.Tick += (_, _) => HideControls();
+        _nextTimer.Tick += (_, _) => CountdownTick();
         Closed += OnClosed;
     }
 
     private Playable CurrentItem => _queue[_index];
     private bool CanZap => _queue.Count > 1 && CurrentItem.IsLive;
+    private bool HasNextEpisode => !CurrentItem.IsLive && _index < _queue.Count - 1;
+    private bool HasPreviousEpisode => !CurrentItem.IsLive && _index > 0;
 
     private void Load(IReadOnlyList<Playable> queue, int index)
     {
@@ -117,11 +125,13 @@ public partial class PlayerWindow : Window
     {
         if (!_videoReady || _queue.Count == 0) return;
         var item = CurrentItem;
+        StopRecordingState();
+        CancelNextEpisode();
         _resumeAt = 0;
         if (!item.IsLive && Services.Settings.Data.ResumePlayback && Services.Profiles.HistoryFor(item.Id) is { CanResume: true } previous)
             _resumeAt = previous.PositionMs;
 
-        Title = $"{item.Title} — Zapp TV";
+        Title = $"{item.Title} — Lumio";
         TitleText.Text = item.Title;
         SubtitleText.Text = item.Subtitle ?? "";
         LiveBadge.Visibility = item.IsLive ? Visibility.Visible : Visibility.Collapsed;
@@ -132,7 +142,11 @@ public partial class PlayerWindow : Window
         LogoImageBox.Visibility = logo != null ? Visibility.Visible : Visibility.Collapsed;
 
         var zap = CanZap ? Visibility.Visible : Visibility.Collapsed;
-        PrevButton.Visibility = NextButton.Visibility = ListButton.Visibility = ErrorNextButton.Visibility = zap;
+        ListButton.Visibility = ErrorNextButton.Visibility = zap;
+        PrevButton.Visibility = CanZap || HasPreviousEpisode ? Visibility.Visible : Visibility.Collapsed;
+        NextButton.Visibility = CanZap || HasNextEpisode ? Visibility.Visible : Visibility.Collapsed;
+        PrevButton.ToolTip = CanZap ? "Chaîne précédente (↑)" : "Épisode précédent";
+        NextButton.ToolTip = CanZap ? "Chaîne suivante (↓)" : "Épisode suivant (N)";
         var vod = item.IsLive ? Visibility.Collapsed : Visibility.Visible;
         SeekRow.Visibility = BackTenButton.Visibility = ForwardTenButton.Visibility = vod;
         HintText.Text = LinkInspector.Format(item.Url).Label() + " · VLC";
@@ -145,15 +159,125 @@ public partial class PlayerWindow : Window
         TimeText.Text = "0:00";
         RemainingText.Text = "";
 
-        using var media = new Vlc.Media(Services.LibVLC, item.Url, Vlc.FromType.FromLocation);
-        media.AddOption($":network-caching={Math.Clamp(Services.Settings.Data.NetworkCacheMs, 300, 20000)}");
-        media.AddOption(":http-reconnect");
-        _player.Play(media);
-        _player.Volume = (int)VolumeSlider.Value;
+        StartMedia(0, null);
 
         RefreshChannelList();
         ShowControls();
     }
+
+    /// <summary>Lance le flux courant, éventuellement à une position et en l'enregistrant dans un fichier.</summary>
+    private void StartMedia(long startMs, string? recordPath)
+    {
+        using var media = new Vlc.Media(Services.LibVLC, CurrentItem.Url, Vlc.FromType.FromLocation);
+        media.AddOption($":network-caching={Math.Clamp(Services.Settings.Data.NetworkCacheMs, 300, 20000)}");
+        media.AddOption(":http-reconnect");
+        if (startMs > 0) media.AddOption(":start-time=" + (startMs / 1000.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+        if (recordPath != null)
+        {
+            // Lecture à l'écran + copie du flux dans un fichier, sans réencodage.
+            var dst = recordPath.Replace('\\', '/');
+            media.AddOption($":sout=#duplicate{{dst=display,dst=std{{access=file,mux=ts,dst='{dst}'}}}}");
+            media.AddOption(":sout-keep");
+        }
+        _player.Play(media);
+        _player.Volume = (int)VolumeSlider.Value;
+    }
+
+    // ── Enregistrement ────────────────────────────────────────────────────
+
+    public static string RecordingsFolder =>
+        System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Lumio");
+
+    private void ToggleRecording()
+    {
+        if (_queue.Count == 0) return;
+        var position = CurrentItem.IsLive ? 0 : Math.Max(0, _player.Time);
+        if (_recordPath is null)
+        {
+            try
+            {
+                System.IO.Directory.CreateDirectory(RecordingsFolder);
+            }
+            catch (Exception ex)
+            {
+                ShowHint($"Impossible de créer le dossier d'enregistrement : {ex.Message}");
+                return;
+            }
+            var invalid = System.IO.Path.GetInvalidFileNameChars();
+            var name = new string(CurrentItem.Title.Select(c => invalid.Contains(c) ? '_' : c).ToArray()).Trim();
+            if (name.Length > 60) name = name[..60];
+            var path = System.IO.Path.Combine(RecordingsFolder, $"{name} {DateTime.Now:yyyy-MM-dd HH-mm-ss}.ts");
+            _recordPath = path;
+            _recordStartedAt = DateTime.Now;
+            StartMedia(position, path);
+            RecBadge.Visibility = Visibility.Visible;
+            RecordDot.Fill = Brushes.White;
+            RecordButton.ToolTip = "Arrêter l'enregistrement (R)";
+            ShowHint("Enregistrement en cours · usage privé uniquement");
+        }
+        else
+        {
+            var saved = _recordPath;
+            StopRecordingState();
+            StartMedia(position, null);
+            ShowHint($"Enregistré dans Vidéos\\Lumio : {System.IO.Path.GetFileName(saved)}");
+        }
+    }
+
+    private void StopRecordingState()
+    {
+        _recordPath = null;
+        RecBadge.Visibility = Visibility.Collapsed;
+        RecordDot.Fill = new SolidColorBrush(Color.FromRgb(0xE5, 0x48, 0x4D));
+        RecordButton.ToolTip = "Enregistrer le flux (R)";
+    }
+
+    private void ShowHint(string message)
+    {
+        HintText.Text = message;
+        ShowControls();
+    }
+
+    // ── Épisode suivant ───────────────────────────────────────────────────
+
+    private void StartNextEpisodeCountdown()
+    {
+        if (!HasNextEpisode || !Services.Settings.Data.AutoPlayNext) return;
+        var next = _queue[_index + 1];
+        NextEpisodeTitle.Text = next.Title;
+        NextEpisodeSubtitle.Text = next.Subtitle ?? "";
+        _countdown = 10;
+        CountdownText.Text = _countdown.ToString();
+        NextEpisodePanel.Visibility = Visibility.Visible;
+        _nextTimer.Start();
+        ShowControls();
+    }
+
+    private void CountdownTick()
+    {
+        _countdown--;
+        CountdownText.Text = Math.Max(0, _countdown).ToString();
+        if (_countdown <= 0) PlayNextEpisode();
+    }
+
+    private void PlayNextEpisode()
+    {
+        CancelNextEpisode();
+        if (!HasNextEpisode) return;
+        RecordHistory(notify: true);
+        _index++;
+        PlayCurrent();
+    }
+
+    private void CancelNextEpisode()
+    {
+        _nextTimer.Stop();
+        NextEpisodePanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void NextEpisodeNow_Click(object sender, RoutedEventArgs e) => PlayNextEpisode();
+    private void NextEpisodeCancel_Click(object sender, RoutedEventArgs e) => CancelNextEpisode();
+    private void Record_Click(object sender, RoutedEventArgs e) => ToggleRecording();
 
     /// <summary>Reprise d'un film / épisode là où on s'était arrêté.</summary>
     private void ApplyResume()
@@ -220,7 +344,16 @@ public partial class PlayerWindow : Window
     private void OnEnded()
     {
         PlayPauseGlyph.Text = "";
+        if (_recordPath != null)
+        {
+            var saved = _recordPath;
+            StopRecordingState();
+            HintText.Text = $"Enregistré : {System.IO.Path.GetFileName(saved)}";
+        }
+        // Fin d'un film ou d'un épisode : il sort de « Reprendre la lecture ».
+        if (!CurrentItem.IsLive) Services.Profiles.RemoveHistory(CurrentItem.Id);
         ShowControls();
+        StartNextEpisodeCountdown();
     }
 
     private void SetBuffering(bool buffering)
@@ -247,6 +380,12 @@ public partial class PlayerWindow : Window
             && DateTime.Now - _startedAt > TimeSpan.FromSeconds(30) && _player.Time <= 0)
         {
             ShowError("Le flux ne répond pas (délai dépassé).");
+        }
+
+        if (_recordPath != null)
+        {
+            var elapsed = DateTime.Now - _recordStartedAt;
+            RecText.Text = $"REC {(int)elapsed.TotalMinutes}:{elapsed.Seconds:00}";
         }
 
         if (DateTime.Now - _lastRecord > TimeSpan.FromSeconds(5) && _player.IsPlaying)
@@ -369,6 +508,12 @@ public partial class PlayerWindow : Window
             case Key.L:
                 ToggleList();
                 break;
+            case Key.R:
+                ToggleRecording();
+                break;
+            case Key.N:
+                if (HasNextEpisode) PlayNextEpisode();
+                break;
             case Key.Up:
                 if (CanZap) Zap(-1); else ChangeVolume(5);
                 break;
@@ -421,8 +566,22 @@ public partial class PlayerWindow : Window
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
     private void List_Click(object sender, RoutedEventArgs e) => ToggleList();
-    private void Prev_Click(object sender, RoutedEventArgs e) => Zap(-1);
-    private void Next_Click(object sender, RoutedEventArgs e) => Zap(1);
+    private void Prev_Click(object sender, RoutedEventArgs e)
+    {
+        if (CanZap) Zap(-1);
+        else if (HasPreviousEpisode)
+        {
+            RecordHistory(notify: true);
+            _index--;
+            PlayCurrent();
+        }
+    }
+
+    private void Next_Click(object sender, RoutedEventArgs e)
+    {
+        if (CanZap) Zap(1);
+        else PlayNextEpisode();
+    }
     private void PlayPause_Click(object sender, RoutedEventArgs e) => TogglePause();
     private void BackTen_Click(object sender, RoutedEventArgs e) => Jump(-10);
     private void ForwardTen_Click(object sender, RoutedEventArgs e) => Jump(10);
@@ -469,6 +628,7 @@ public partial class PlayerWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         RecordHistory(notify: true);
+        _nextTimer.Stop();
         Current = null;
         _uiTimer.Stop();
         _hideTimer.Stop();

@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using ZappTV.Core;
+using ZappTV.Core.Tmdb;
 
 namespace ZappTV.Controls;
 
@@ -12,6 +13,7 @@ public partial class HeroBanner : UserControl
 {
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(8) };
     private IReadOnlyList<MediaItem> _items = [];
+    private IReadOnlyDictionary<string, TmdbTrend> _trends = new Dictionary<string, TmdbTrend>();
     private int _index;
 
     public HeroBanner()
@@ -22,8 +24,9 @@ public partial class HeroBanner : UserControl
         Loaded += (_, _) => { if (_items.Count > 1 && Services.Settings.Data.HeroAutoplay) _timer.Start(); };
     }
 
-    public void SetItems(IReadOnlyList<MediaItem> items)
+    public void SetItems(IReadOnlyList<MediaItem> items, IReadOnlyDictionary<string, TmdbTrend>? trends = null)
     {
+        _trends = trends ?? new Dictionary<string, TmdbTrend>();
         var current = _items.Count > 0 ? _items[Math.Min(_index, _items.Count - 1)].Id : null;
         _items = items;
         _index = Math.Max(0, items.ToList().FindIndex(i => i.Id == current));
@@ -41,18 +44,33 @@ public partial class HeroBanner : UserControl
         if (Current is not { } item) return;
         var isLive = item.Kind == MediaKind.Live;
 
-        KindText.Text = item.Kind.Label();
-        TitleText.Text = item.DisplayName;
-        SubtitleText.Text = item.Rating is > 0
-            ? $"{item.Group}  ·  ★ {item.Rating:0.0}"
-            : item.Group;
+        _trends.TryGetValue(item.Id, out var trend);
+        KindText.Text = trend != null ? $"Tendance cette semaine · {(item.Kind == MediaKind.Movie ? "Film" : "Série")}" : item.Kind.Title() switch
+        {
+            "En direct" => "En direct",
+            "Films" => "Film",
+            _ => "Série",
+        };
+        TitleText.Text = trend?.Title is { Length: > 0 } t ? t : item.DisplayName;
+        TitleLogo.Visibility = Visibility.Collapsed;
+        var parts = new List<string>();
+        if (trend?.Year is { } year) parts.Add(year.ToString());
+        var rating = trend?.Rating ?? item.Rating;
+        if (rating is > 0) parts.Add($"★ {rating:0.0}");
+        if (trend is null) parts.Insert(0, item.Group);
+        SubtitleText.Text = string.Join("  ·  ", parts);
+        OverviewText.Text = trend?.Overview ?? "";
+        OverviewText.Visibility = string.IsNullOrWhiteSpace(trend?.Overview) ? Visibility.Collapsed : Visibility.Visible;
         PlayLabel.Text = isLive ? "Regarder" : item.OpensDetail ? "Épisodes" : "Lire";
         PlayGlyph.Text = item.OpensDetail ? "" : "";
         RefreshFavorite();
 
         Fallback.Background = ThemeManager.GradientFor(item.Name);
         var image = ImageUrlConverter.Load(item.LogoUrl, isLive ? 600 : 900);
-        Backdrop.Source = isLive ? null : image;
+        var backdrop = ImageUrlConverter.Load(trend?.Backdrop, 1600);
+        Backdrop.Source = isLive ? null : backdrop ?? image;
+        Backdrop.Effect = backdrop != null ? null : new System.Windows.Media.Effects.BlurEffect { Radius = 36 };
+        if (ImageUrlConverter.Load(trend?.Poster, 400) is { } poster) image = poster;
         LiveLogo.Source = isLive ? image : null;
         LiveLogo.Visibility = isLive ? Visibility.Visible : Visibility.Collapsed;
         PosterBrush.ImageSource = isLive ? null : image;
