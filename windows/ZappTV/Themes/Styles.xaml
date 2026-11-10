@@ -124,8 +124,8 @@
     </Style>
 
     <!-- ── Liquid Glass ───────────────────────────────────────────────
-         Règle unique : tout ce qui se clique est une capsule ou un cercle en verre,
-         tout ce qui contient (cartes, groupes) a des coins de 16 px.
+         Règle unique : uniquement des rectangles arrondis (jamais d'ovale ni de capsule),
+         boutons 10 px, petits éléments 8 px, cartes 16 px.
          Verre = remplissage translucide en dégradé + liseré lumineux en haut. -->
     <LinearGradientBrush x:Key="GlassFill" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#2BFFFFFF" Offset="0" />
@@ -181,8 +181,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid>
-                        <Border CornerRadius="100" Background="{StaticResource PrimaryFill}" BorderBrush="#33000000" BorderThickness="0,0,0,1" />
-                        <Border x:Name="Shade" CornerRadius="100" Background="Black" Opacity="0" />
+                        <Border CornerRadius="10" Background="{StaticResource PrimaryFill}" BorderBrush="#33000000" BorderThickness="0,0,0,1" />
+                        <Border x:Name="Shade" CornerRadius="10" Background="Black" Opacity="0" />
                         <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -214,9 +214,9 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid>
-                        <Border CornerRadius="100" Background="{DynamicResource AccentBrush}" />
-                        <Border CornerRadius="100" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1" />
-                        <Border x:Name="Shade" CornerRadius="100" Background="Black" Opacity="0" />
+                        <Border CornerRadius="10" Background="{DynamicResource AccentBrush}" />
+                        <Border CornerRadius="10" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1" />
+                        <Border x:Name="Shade" CornerRadius="10" Background="Black" Opacity="0" />
                         <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -247,7 +247,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="10" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
                         <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -278,7 +278,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="100" Background="#0DFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="8" Background="#0DFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1">
                         <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -298,7 +298,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassFillPressed}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="8" Background="{StaticResource GlassFillPressed}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
                         <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                 </ControlTemplate>
@@ -316,7 +316,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="10" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -346,7 +346,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="100" Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="8" Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
                         <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -373,7 +373,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Bd" CornerRadius="100" Padding="12,0" Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="8" Padding="12,0" Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -407,8 +407,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
                     <Grid Width="44" Height="26" Background="Transparent">
-                        <Border x:Name="Track" CornerRadius="13" Background="#33FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1" />
-                        <Border x:Name="Knob" Width="22" Height="22" CornerRadius="11" Background="{StaticResource PrimaryFill}"
+                        <Border x:Name="Track" CornerRadius="8" Background="#33FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1" />
+                        <Border x:Name="Knob" Width="22" Height="22" CornerRadius="6" Background="{StaticResource PrimaryFill}"
                                 BorderBrush="#26000000" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Margin="2,0,0,0" />
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -440,7 +440,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Bd" CornerRadius="100" Padding="14,0" Background="#0DFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="8" Padding="14,0" Background="#0DFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -471,7 +471,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassPanel}"
+                    <Border x:Name="Bd" CornerRadius="10" Background="{StaticResource GlassPanel}"
                             BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1">
                         <Grid>
                             <TextBlock x:Name="Placeholder"
@@ -505,7 +505,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="PasswordBox">
-                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassPanel}"
+                    <Border x:Name="Bd" CornerRadius="10" Background="{StaticResource GlassPanel}"
                             BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
                     </Border>

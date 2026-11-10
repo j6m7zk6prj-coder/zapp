@@ -79,7 +79,7 @@ public static class FootUi
         var badge = new Border
         {
             Background = background,
-            CornerRadius = new CornerRadius(100),
+            CornerRadius = new CornerRadius(6),
             Padding = new Thickness(8, 2, 8, 2),
             VerticalAlignment = VerticalAlignment.Center,
             Child = new TextBlock { Text = text, FontSize = 11, FontWeight = FontWeights.Black, Foreground = foreground ?? Brushes.White },
@@ -298,7 +298,7 @@ public static class FootUi
     public static Button ChannelButton(ZappTV.Core.MediaItem channel, IReadOnlyList<ZappTV.Core.MediaItem> context)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal };
-        var logo = new Border { Width = 60, Height = 34, CornerRadius = new CornerRadius(17), Background = B("SurfaceHighBrush"), Margin = new Thickness(0, 0, 12, 0) };
+        var logo = new Border { Width = 60, Height = 34, CornerRadius = new CornerRadius(8), Background = B("SurfaceHighBrush"), Margin = new Thickness(0, 0, 12, 0) };
         if (ImageUrlConverter.Load(channel.LogoUrl, 128) is { } image) logo.Child = new Image { Source = image, Margin = new Thickness(5, 4, 5, 4) };
         else logo.Child = new TextBlock { Text = channel.Initials, FontWeight = FontWeights.Black, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         content.Children.Add(logo);

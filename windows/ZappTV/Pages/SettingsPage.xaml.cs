@@ -228,7 +228,7 @@ public partial class SettingsPage : UserControl
                 Style = (Style)Application.Current.FindResource("PlainButton"),
                 Content = new Border
                 {
-                    CornerRadius = new CornerRadius(100),
+                    CornerRadius = new CornerRadius(6),
                     Padding = new Thickness(12, 5, 12, 5),
                     Background = selected ? (Brush)Application.Current.FindResource("GlassFillPressed") : Brushes.Transparent,
                     BorderBrush = selected ? (Brush)Application.Current.FindResource("GlassStroke") : Brushes.Transparent,
@@ -245,7 +245,7 @@ public partial class SettingsPage : UserControl
             Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)),
             BorderBrush = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(100),
+            CornerRadius = new CornerRadius(8),
             Padding = new Thickness(2),
             Child = panel,
         };

@@ -109,7 +109,7 @@ public partial class HeroBanner : UserControl
             {
                 Height = 8,
                 Width = 8,
-                CornerRadius = new CornerRadius(4),
+                CornerRadius = new CornerRadius(2),
                 Background = Brushes.White,
                 Margin = new Thickness(4, 0, 0, 0),
             });
