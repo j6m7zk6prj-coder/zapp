@@ -1,0 +1,49 @@
+ITV POUR WINDOWS
+================
+
+Lancer : double-clic sur iTv.exe (garde tous les fichiers du dossier ensemble).
+
+Si Windows affiche « Windows a protégé votre ordinateur » :
+cliquer sur « Informations complémentaires » puis « Exécuter quand même ».
+(L'app n'est pas signée avec un certificat payant, c'est normal.)
+
+Ajouter du contenu
+- Un lien de flux : copie-le puis Ctrl+V dans l'app, ou bouton « Ajouter ».
+  Formats lus : HLS (.m3u8), MP4, TS, MKV, AVI, FLV, RTMP, RTSP, UDP, RTP, SRT, MMS…
+- Une playlist : bouton « Ajouter » → « Ajouter une playlist » (URL M3U, fichier M3U, Xtream Codes),
+  ou glisse un fichier .m3u dans la fenêtre.
+
+Nouveautés de la version 4.0 (Lumio devient iTv, comme sur iPhone)
+- Même interface que l'app iPhone : fond noir, titres en italique, accueil réduit à l'essentiel
+  (à la une, reprendre, matchs de tes équipes, mes liens, ma liste, regardées récemment).
+- Nouveau logo : la télécommande.
+
+Version 3.0 (Zapp TV devient Lumio)
+- Nouveau nom, nouveau logo, interface plus premium.
+- Fiches films et séries façon Netflix (TMDB) : grande image, note, résumé, acteurs, bande-annonce,
+  et « Tendances dans ta playlist ». Il faut une clé TMDB gratuite : Réglages → Fiches films et séries.
+- Épisode suivant automatique (compte à rebours de 10 s, touche N).
+- Enregistrer un flux : bouton ⏺ ou touche R dans le lecteur (fichiers dans Vidéos\iTv, usage privé).
+
+Version 2.0
+- Navigation en onglets en haut : Pour toi · Direct · Films · Séries · Foot · Mes liens (Ctrl+1 à 6).
+- Onglet Foot : matchs du jour par compétition, filtres (mes équipes, en direct), classements,
+  fiche match (score en direct, buteurs, statistiques, compositions) et fiche équipe (calendrier, forme).
+- « Où regarder » : diffuseur habituel en France + chaînes de ta playlist correspondantes.
+  Épingle la bonne chaîne une fois, elle est retenue pour toute la compétition.
+- Profils (favoris, historique, ligues et équipes propres à chacun) : clic sur la pastille en haut à droite.
+- « Reprendre la lecture » et « Chaînes récentes » sur l'accueil.
+- Réglages : ordre et choix des sections de l'accueil, onglet de démarrage, mode anti-spoiler,
+  fréquence d'actualisation des scores, décodage matériel, mémoire tampon, reprise de lecture…
+- Données foot : ESPN (publiques). Il faut une connexion internet.
+
+Raccourcis
+- Ctrl+1…6 changer d'onglet
+- Ctrl+V coller un lien · Ctrl+N nouveau lien · Ctrl+F rechercher · F5 actualiser
+- Lecteur : Espace pause · ↑ ↓ chaîne précédente/suivante · ← → ±10 s · F plein écran · M muet · L liste · Échap quitter
+
+Clic droit sur une chaîne ou un film : lire, favori, modifier (nom, logo, catégorie), masquer.
+
+Tes données (liens, playlists, favoris, logos, réglages) sont dans %APPDATA%\ZappTV (gardées en passant à iTv).
+
+iTv ne fournit aucun contenu. Utilise uniquement des flux auxquels tu as légalement accès.
