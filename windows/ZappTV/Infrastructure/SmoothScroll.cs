@@ -25,8 +25,8 @@ public static class SmoothScroll
     private static readonly List<WeakReference<ScrollViewer>> Active = [];
     private static bool _rendering;
 
-    /// <summary>Px par unité de molette (une encoche = 120 → ~90 px).</summary>
-    private const double Factor = 0.75;
+    /// <summary>Px par unité de molette (une encoche = 120 → ~84 px ; pavé tactile ≈ 1:1 avec le doigt).</summary>
+    private const double Factor = 0.7;
 
     public static void Install()
     {
@@ -47,7 +47,7 @@ public static class SmoothScroll
                     var delta = (short)((wParam.ToInt64() >> 16) & 0xFFFF);
                     if (Mouse.DirectlyOver is DependencyObject over && FindScrollable(over, horizontal: true) is { } viewer)
                     {
-                        ScrollBy(viewer, delta * Factor, horizontal: true);
+                        ScrollBy(viewer, delta * Factor, horizontal: true, precise: delta % 120 != 0);
                         handled = true;
                     }
                     return IntPtr.Zero;
@@ -64,7 +64,7 @@ public static class SmoothScroll
         var target = FindScrollable(origin, horizontal);
         if (target != viewer) return;
         e.Handled = true;
-        ScrollBy(viewer, -e.Delta * Factor, horizontal);
+        ScrollBy(viewer, -e.Delta * Factor, horizontal, precise: e.Delta % 120 != 0);
     }
 
     private static ScrollViewer? FindScrollable(DependencyObject start, bool horizontal)
@@ -82,9 +82,31 @@ public static class SmoothScroll
     private static DependencyObject? Parent(DependencyObject node) =>
         node is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(node) ?? LogicalTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node);
 
-    private static void ScrollBy(ScrollViewer viewer, double pixels, bool horizontal)
+    /// <summary>
+    /// Pavé tactile (petits deltas, <paramref name="precise"/>) : la page suit le doigt immédiatement, sans animation
+    /// qui ajouterait du retard. Molette (crans de 120) : petit pas animé.
+    /// </summary>
+    private static void ScrollBy(ScrollViewer viewer, double pixels, bool horizontal, bool precise)
     {
         var state = States.GetValue(viewer, _ => new State());
+        if (precise)
+        {
+            if (horizontal)
+            {
+                var start = state.AnimatingX ? state.TargetX : viewer.HorizontalOffset;
+                state.AnimatingX = false;
+                state.TargetX = Math.Clamp(start + pixels, 0, viewer.ScrollableWidth);
+                viewer.ScrollToHorizontalOffset(state.TargetX);
+            }
+            else
+            {
+                var start = state.AnimatingY ? state.TargetY : viewer.VerticalOffset;
+                state.AnimatingY = false;
+                state.TargetY = Math.Clamp(start + pixels, 0, viewer.ScrollableHeight);
+                viewer.ScrollToVerticalOffset(state.TargetY);
+            }
+            return;
+        }
         if (horizontal)
         {
             if (!state.AnimatingX) state.TargetX = viewer.HorizontalOffset;
@@ -120,14 +142,14 @@ public static class SmoothScroll
                 var current = viewer.VerticalOffset;
                 var diff = state.TargetY - current;
                 if (Math.Abs(diff) < 0.5) { viewer.ScrollToVerticalOffset(state.TargetY); state.AnimatingY = false; }
-                else viewer.ScrollToVerticalOffset(current + diff * 0.28);
+                else viewer.ScrollToVerticalOffset(current + diff * 0.35);
             }
             if (state.AnimatingX)
             {
                 var current = viewer.HorizontalOffset;
                 var diff = state.TargetX - current;
                 if (Math.Abs(diff) < 0.5) { viewer.ScrollToHorizontalOffset(state.TargetX); state.AnimatingX = false; }
-                else viewer.ScrollToHorizontalOffset(current + diff * 0.28);
+                else viewer.ScrollToHorizontalOffset(current + diff * 0.35);
             }
             if (!state.AnimatingX && !state.AnimatingY) Active.RemoveAt(i);
         }

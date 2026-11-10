@@ -7,13 +7,21 @@
         AllowDrop="True" Drop="Window_Drop" PreviewKeyDown="Window_PreviewKeyDown" PreviewMouseDown="Window_PreviewMouseDown">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="232" />
+            <ColumnDefinition Width="244" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <!-- Barre latérale (comme l'app TV sur Mac) -->
-        <Border Background="#FF0E0E11" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,1,0">
-            <DockPanel Margin="12,16,12,14">
+        <!-- Fond dégradé mis en cache : il n'est plus redessiné à chaque image pendant le défilement -->
+        <Border Grid.ColumnSpan="2" Background="{DynamicResource BackdropBrush}" IsHitTestVisible="False">
+            <Border.CacheMode>
+                <BitmapCache EnableClearType="False" SnapsToDevicePixels="True" />
+            </Border.CacheMode>
+        </Border>
+
+        <!-- Barre latérale flottante en verre (comme l'app TV sur Mac) -->
+        <Border Margin="10,10,2,10" CornerRadius="22" Background="{StaticResource GlassPanel}"
+                BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1">
+            <DockPanel Margin="10,16,10,12">
                 <!-- Logo -->
                 <Button DockPanel.Dock="Top" Style="{StaticResource PlainButton}" Click="Logo_Click" Margin="6,0,0,18" HorizontalAlignment="Left" ToolTip="Accueil">
                     <StackPanel Orientation="Horizontal">
@@ -25,10 +33,11 @@
                 <!-- Retour -->
                 <Button x:Name="BackButton" DockPanel.Dock="Top" Style="{StaticResource PlainButton}" Click="Back_Click" Visibility="Collapsed"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,0,0,8" ToolTip="Retour (Alt+←)">
-                    <Border CornerRadius="8" Padding="10,7" Background="#0FFFFFFF">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE72B;" Style="{StaticResource Icon}" FontSize="12" Margin="0,0,10,0" />
-                            <TextBlock Text="Retour" FontSize="13" />
+                    <Border CornerRadius="100" Height="36" Padding="12,0" Background="{StaticResource GlassFill}"
+                            BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE72B;" Style="{StaticResource NavIcon}" FontSize="13" />
+                            <TextBlock Text="Retour" FontSize="14" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </Button>
@@ -44,10 +53,10 @@
                     </RadioButton>
                     <Button x:Name="AvatarButton" Style="{StaticResource PlainButton}" Click="Avatar_Click" Margin="0,4,0,0"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip="Profil">
-                        <Border CornerRadius="8" Padding="8,7" Background="Transparent" x:Name="ProfileRow">
+                        <Border CornerRadius="100" Height="40" Padding="6,0,12,0" Background="Transparent" x:Name="ProfileRow">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" Style="{StaticResource Icon}" FontSize="10" Opacity="0.6" VerticalAlignment="Center" />
-                                <Border x:Name="AvatarCircle" Width="26" Height="26" CornerRadius="13" Background="{DynamicResource AccentBrush}">
+                                <Border x:Name="AvatarCircle" Width="28" Height="28" CornerRadius="14" VerticalAlignment="Center" Background="{DynamicResource AccentBrush}">
                                     <TextBlock x:Name="AvatarText" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                                 <TextBlock x:Name="ProfileName" FontSize="13" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -59,12 +68,10 @@
                 <!-- Navigation -->
                 <StackPanel>
                     <RadioButton x:Name="NavSearch" Style="{StaticResource SidebarItem}" GroupName="Nav" Tag="search" Checked="Nav_Checked" Margin="0,0,0,10">
-                        <Border Background="#14FFFFFF" CornerRadius="7" Padding="8,5" Margin="-6,0,-6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" FontSize="12" Opacity="0.7" Margin="0,0,9,0" />
-                                <TextBlock Text="Rechercher" FontSize="13" Opacity="0.7" />
-                            </StackPanel>
-                        </Border>
+                        <StackPanel Orientation="Horizontal" Opacity="0.75">
+                            <TextBlock Text="&#xE721;" Style="{StaticResource NavIcon}" />
+                            <TextBlock Text="Rechercher" VerticalAlignment="Center" />
+                        </StackPanel>
                     </RadioButton>
 
                     <RadioButton x:Name="NavHome" Style="{StaticResource SidebarItem}" GroupName="Nav" Tag="home" Checked="Nav_Checked">
@@ -109,7 +116,7 @@
                         </StackPanel>
                     </RadioButton>
                     <Button x:Name="AddButton" Style="{StaticResource PlainButton}" Click="Add_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1,0,0">
-                        <Border CornerRadius="8" Padding="10,0" Height="36" Background="Transparent">
+                        <Border CornerRadius="100" Padding="13,0" Height="36" Background="Transparent">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Opacity="0.75">
                                 <TextBlock Text="&#xE710;" Style="{StaticResource NavIcon}" />
                                 <TextBlock Text="Ajouter…" FontSize="14" VerticalAlignment="Center" />
@@ -130,11 +137,11 @@
                      Foreground="{DynamicResource AccentBrush}" Background="Transparent" BorderThickness="0" />
 
         <!-- Contenu -->
-        <Grid Grid.Column="1" Background="{DynamicResource BackdropBrush}" ClipToBounds="True">
+        <Grid Grid.Column="1" ClipToBounds="True">
             <ContentControl x:Name="Host" Focusable="False" />
 
             <Border x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,28"
-                    Background="#F21C1C1E" CornerRadius="10" Padding="16,10" BorderBrush="#26FFFFFF" BorderThickness="1"
+                    Background="#F21C1C20" CornerRadius="100" Padding="20,10" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1"
                     Visibility="Collapsed" IsHitTestVisible="False">
                 <TextBlock x:Name="ToastText" FontSize="13" />
             </Border>

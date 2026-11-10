@@ -15,7 +15,7 @@
         <TextBox x:Name="UrlBox" Style="{StaticResource Field}" Tag="http://…/flux.m3u8, rtmp://…, udp://@…" TextChanged="Url_TextChanged" />
         <TextBlock x:Name="FormatText" Margin="3,8,0,0" FontSize="13" />
 
-        <Border x:Name="PlaylistBanner" Visibility="Collapsed" Background="#1FFFFFFF" CornerRadius="12" Padding="16,12" Margin="0,12,0,0">
+        <Border x:Name="PlaylistBanner" Visibility="Collapsed" Background="{StaticResource GlassPanel}" BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1" CornerRadius="16" Padding="16,12" Margin="0,12,0,0">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Click="AddAsPlaylist_Click" Content="L'ajouter comme playlist" Margin="12,0,0,0" />
                 <TextBlock Text="Ce lien ressemble à une playlist complète (plusieurs chaînes)." TextWrapping="Wrap" VerticalAlignment="Center" />

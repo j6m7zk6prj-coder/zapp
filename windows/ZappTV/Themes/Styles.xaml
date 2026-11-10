@@ -107,7 +107,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="12" Padding="10,6" Background="Transparent">
+                    <Border x:Name="Bd" CornerRadius="14" Padding="10,6" Background="Transparent">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -123,57 +123,74 @@
         </Setter>
     </Style>
 
-    <!-- Gros bouton blanc « Lire ». -->
+    <!-- ── Liquid Glass ───────────────────────────────────────────────
+         Règle unique : tout ce qui se clique est une capsule ou un cercle en verre,
+         tout ce qui contient (cartes, groupes) a des coins de 16 px.
+         Verre = remplissage translucide en dégradé + liseré lumineux en haut. -->
+    <LinearGradientBrush x:Key="GlassFill" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#2BFFFFFF" Offset="0" />
+        <GradientStop Color="#12FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GlassFillHover" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#40FFFFFF" Offset="0" />
+        <GradientStop Color="#1FFFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GlassFillPressed" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#52FFFFFF" Offset="0" />
+        <GradientStop Color="#2EFFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GlassStroke" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#70FFFFFF" Offset="0" />
+        <GradientStop Color="#14FFFFFF" Offset="0.5" />
+        <GradientStop Color="#26FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GlassPanel" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#1AFFFFFF" Offset="0" />
+        <GradientStop Color="#0AFFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GlassPanelStroke" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#40FFFFFF" Offset="0" />
+        <GradientStop Color="#0FFFFFFF" Offset="0.4" />
+        <GradientStop Color="#14FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <!-- Reflet blanc du bouton principal -->
+    <LinearGradientBrush x:Key="PrimaryFill" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FFFFFFFF" Offset="0" />
+        <GradientStop Color="#FFE9E9EE" Offset="1" />
+    </LinearGradientBrush>
+    <CornerRadius x:Key="CardRadius">16</CornerRadius>
+
+    <!-- Carte de verre (conteneurs) -->
+    <Style x:Key="GlassCard" TargetType="Border">
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Background" Value="{StaticResource GlassPanel}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GlassPanelStroke}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- Bouton principal blanc « Lire » : capsule -->
     <Style x:Key="PrimaryButton" TargetType="Button">
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Foreground" Value="Black" />
-        <Setter Property="FontSize" Value="15" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Padding" Value="24,11" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="10" Background="White" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#E6E6EB" />
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#C8C8D0" />
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.4" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <Style x:Key="AccentButton" TargetType="Button">
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
-        <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="22,0" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid>
-                        <Border CornerRadius="8" Background="{DynamicResource AccentBrush}" />
-                        <Border x:Name="Shade" CornerRadius="8" Background="Black" Opacity="0" />
+                        <Border CornerRadius="100" Background="{StaticResource PrimaryFill}" BorderBrush="#33000000" BorderThickness="0,0,0,1" />
+                        <Border x:Name="Shade" CornerRadius="100" Background="Black" Opacity="0" />
                         <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Shade" Property="Opacity" Value="0.12" />
+                            <Setter TargetName="Shade" Property="Opacity" Value="0.08" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Shade" Property="Opacity" Value="0.25" />
+                            <Setter TargetName="Shade" Property="Opacity" Value="0.18" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.4" />
@@ -184,24 +201,61 @@
         </Setter>
     </Style>
 
+    <!-- Bouton teinté (accent) : capsule de verre colorée -->
+    <Style x:Key="AccentButton" TargetType="Button">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Border CornerRadius="100" Background="{DynamicResource AccentBrush}" />
+                        <Border CornerRadius="100" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1" />
+                        <Border x:Name="Shade" CornerRadius="100" Background="Black" Opacity="0" />
+                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Shade" Property="Opacity" Value="0.1" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Shade" Property="Opacity" Value="0.22" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Bouton secondaire : capsule de verre -->
     <Style x:Key="GhostButton" TargetType="Button">
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Foreground" Value="White" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="MinHeight" Value="34" />
+        <Setter Property="Padding" Value="16,0" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="8" Background="#1FFFFFFF" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#33FFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFillHover}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#47FFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFillPressed}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.4" />
@@ -212,23 +266,25 @@
         </Setter>
     </Style>
 
-    <!-- Pastilles (onglets, filtres, jours) -->
+    <!-- Pastilles (onglets, filtres, jours) : capsules de 32 px -->
     <Style x:Key="PillButton" TargetType="Button">
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Foreground" Value="#B3FFFFFF" />
+        <Setter Property="Foreground" Value="#C7FFFFFF" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="14,0" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="8" Background="Transparent" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border x:Name="Bd" CornerRadius="100" Background="#0DFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#14FFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFill}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GlassStroke}" />
                             <Setter Property="Foreground" Value="White" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -242,32 +298,33 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="8" Background="#29FFFFFF" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassFillPressed}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
+    <!-- Bouton rond en verre (40 px) -->
     <Style x:Key="CircleButton" TargetType="Button">
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Foreground" Value="White" />
-        <Setter Property="Width" Value="46" />
-        <Setter Property="Height" Value="46" />
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="100" Background="#2BFFFFFF">
+                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassFill}" BorderBrush="{StaticResource GlassStroke}" BorderThickness="1">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#47FFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFillHover}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#63FFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFillPressed}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.35" />
@@ -278,20 +335,24 @@
         </Setter>
     </Style>
 
+    <!-- Petite icône cliquable : cercle de 34 px, verre au survol -->
     <Style x:Key="IconButton" TargetType="Button">
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Foreground" Value="White" />
-        <Setter Property="Padding" Value="9" />
+        <Setter Property="MinWidth" Value="34" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="8,0" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" CornerRadius="8" Background="Transparent" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border x:Name="Bd" CornerRadius="100" Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#1FFFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFill}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GlassStroke}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.35" />
@@ -302,66 +363,9 @@
         </Setter>
     </Style>
 
-    <!-- Barre latérale -->
     <Style x:Key="NavButton" TargetType="RadioButton">
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Foreground" Value="#C7FFFFFF" />
-        <Setter Property="FontSize" Value="15" />
-        <Setter Property="Margin" Value="0,2" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Bd" CornerRadius="10" Padding="12,10" Background="Transparent">
-                        <ContentPresenter />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#14FFFFFF" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#26FFFFFF" />
-                            <Setter Property="Foreground" Value="White" />
-                            <Setter Property="FontWeight" Value="SemiBold" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- Onglets en pastilles de la barre du haut -->
-    <Style x:Key="TopTab" TargetType="RadioButton">
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Foreground" Value="#C7FFFFFF" />
-        <Setter Property="FontSize" Value="15" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Bd" CornerRadius="100" Padding="18,8" Background="Transparent">
-                        <ContentPresenter VerticalAlignment="Center" />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#1FFFFFFF" />
-                            <Setter Property="Foreground" Value="White" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="White" />
-                            <Setter Property="Foreground" Value="#FF0B0B10" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- Barre latérale (style macOS) -->
-    <Style x:Key="SidebarItem" TargetType="RadioButton">
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Foreground" Value="#D9FFFFFF" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Height" Value="36" />
         <Setter Property="Margin" Value="0,1" />
@@ -369,7 +373,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Bd" CornerRadius="8" Padding="10,0" Background="Transparent">
+                    <Border x:Name="Bd" CornerRadius="100" Padding="12,0" Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -377,7 +381,8 @@
                             <Setter TargetName="Bd" Property="Background" Value="#0FFFFFFF" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#1FFFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFill}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GlassStroke}" />
                             <Setter Property="Foreground" Value="White" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                         </Trigger>
@@ -385,6 +390,13 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="TopTab" TargetType="RadioButton" BasedOn="{StaticResource NavButton}" />
+
+    <!-- Barre latérale : même capsule de verre pour l'élément choisi -->
+    <Style x:Key="SidebarItem" TargetType="RadioButton" BasedOn="{StaticResource NavButton}">
+        <Setter Property="Foreground" Value="#D9FFFFFF" />
     </Style>
 
     <!-- Interrupteur (comme sur iPhone / Mac) -->
@@ -394,13 +406,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Grid Width="42" Height="24" Background="Transparent">
-                        <Border x:Name="Track" CornerRadius="12" Background="#47FFFFFF" />
-                        <Ellipse x:Name="Knob" Width="20" Height="20" Fill="White" HorizontalAlignment="Left" Margin="2,0,0,0">
-                            <Ellipse.Effect>
-                                <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.3" />
-                            </Ellipse.Effect>
-                        </Ellipse>
+                    <Grid Width="44" Height="26" Background="Transparent">
+                        <Border x:Name="Track" CornerRadius="13" Background="#33FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1" />
+                        <Border x:Name="Knob" Width="22" Height="22" CornerRadius="11" Background="{StaticResource PrimaryFill}"
+                                BorderBrush="#26000000" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Margin="2,0,0,0" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
@@ -415,31 +424,33 @@
     </Style>
 
     <Style x:Key="NavIcon" TargetType="TextBlock" BasedOn="{StaticResource Icon}">
-        <Setter Property="Width" Value="30" />
-        <Setter Property="FontSize" Value="17" />
+        <Setter Property="Width" Value="28" />
+        <Setter Property="FontSize" Value="16" />
     </Style>
 
-    <!-- Puces (catégories, choix) -->
+    <!-- Puces (catégories, choix) : mêmes capsules que les pastilles -->
     <Style x:Key="Chip" TargetType="RadioButton">
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Foreground" Value="#B3FFFFFF" />
+        <Setter Property="Foreground" Value="#C7FFFFFF" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Margin" Value="0,0,4,0" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Margin" Value="0,0,6,0" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="Bd" CornerRadius="8" Padding="12,6" Background="Transparent">
+                    <Border x:Name="Bd" CornerRadius="100" Padding="14,0" Background="#0DFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#14FFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFill}" />
                             <Setter Property="Foreground" Value="White" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#29FFFFFF" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource GlassFillPressed}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GlassStroke}" />
                             <Setter Property="Foreground" Value="White" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -454,14 +465,14 @@
         <Setter Property="Foreground" Value="White" />
         <Setter Property="CaretBrush" Value="White" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="Padding" Value="12,9" />
+        <Setter Property="Padding" Value="16,9" />
         <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Border x:Name="Bd" CornerRadius="10" Background="{DynamicResource SurfaceHighBrush}"
-                            BorderBrush="#26FFFFFF" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassPanel}"
+                            BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1">
                         <Grid>
                             <TextBlock x:Name="Placeholder"
                                        Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
@@ -488,14 +499,14 @@
         <Setter Property="Foreground" Value="White" />
         <Setter Property="CaretBrush" Value="White" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="Padding" Value="12,9" />
+        <Setter Property="Padding" Value="16,9" />
         <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="PasswordBox">
-                    <Border x:Name="Bd" CornerRadius="10" Background="{DynamicResource SurfaceHighBrush}"
-                            BorderBrush="#26FFFFFF" BorderThickness="1">
+                    <Border x:Name="Bd" CornerRadius="100" Background="{StaticResource GlassPanel}"
+                            BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -602,7 +613,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContextMenu">
-                    <Border Background="#F7202330" CornerRadius="10" BorderBrush="#33FFFFFF" BorderThickness="1" Padding="5">
+                    <Border Background="#F51C1C20" CornerRadius="16" BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1" Padding="6">
                         <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
                     </Border>
                 </ControlTemplate>
@@ -616,7 +627,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="MenuItem">
-                    <Border x:Name="Bd" CornerRadius="6" Padding="14,8" Background="Transparent" MinWidth="200">
+                    <Border x:Name="Bd" CornerRadius="10" Padding="14,8" Background="Transparent" MinWidth="200">
                         <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
                     </Border>
                     <ControlTemplate.Triggers>

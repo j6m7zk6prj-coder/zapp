@@ -99,8 +99,9 @@ public partial class SettingsPage : UserControl
         {
             var selected = category.Key == _current;
             var row = new StackPanel { Orientation = Orientation.Horizontal };
-            row.Children.Add(IconChip(category.Glyph, category.Color, 22));
-            row.Children.Add(new TextBlock { Text = category.Title, FontSize = 13, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
+            // Même présentation que la barre latérale principale : icône simple + libellé.
+            row.Children.Add(new TextBlock { Text = category.Glyph, Style = (Style)FindResource("NavIcon") });
+            row.Children.Add(new TextBlock { Text = category.Title, FontSize = 13, VerticalAlignment = VerticalAlignment.Center });
             var item = new RadioButton
             {
                 Style = (Style)FindResource("SidebarItem"),
@@ -121,8 +122,11 @@ public partial class SettingsPage : UserControl
     {
         Width = size,
         Height = size,
-        CornerRadius = new CornerRadius(size * 0.26),
-        Background = new SolidColorBrush(ThemeManager.ColorOf(color)),
+        // Toutes les icônes ont la même forme : un cercle de verre.
+        CornerRadius = new CornerRadius(size / 2),
+        Background = (Brush)Application.Current.FindResource("GlassFill"),
+        BorderBrush = (Brush)Application.Current.FindResource("GlassStroke"),
+        BorderThickness = new Thickness(1),
         VerticalAlignment = VerticalAlignment.Center,
         Child = new TextBlock
         {
@@ -150,10 +154,10 @@ public partial class SettingsPage : UserControl
         }
         Pane.Children.Add(new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)),
+            Background = (Brush)FindResource("GlassPanel"),
+            BorderBrush = (Brush)FindResource("GlassPanelStroke"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(10),
+            CornerRadius = new CornerRadius(16),
             Child = panel,
             Margin = new Thickness(0, 0, 0, footer == null ? 22 : 6),
         });
@@ -224,9 +228,11 @@ public partial class SettingsPage : UserControl
                 Style = (Style)Application.Current.FindResource("PlainButton"),
                 Content = new Border
                 {
-                    CornerRadius = new CornerRadius(6),
-                    Padding = new Thickness(11, 4, 11, 4),
-                    Background = selected ? new SolidColorBrush(Color.FromArgb(0x52, 0xFF, 0xFF, 0xFF)) : Brushes.Transparent,
+                    CornerRadius = new CornerRadius(100),
+                    Padding = new Thickness(12, 5, 12, 5),
+                    Background = selected ? (Brush)Application.Current.FindResource("GlassFillPressed") : Brushes.Transparent,
+                    BorderBrush = selected ? (Brush)Application.Current.FindResource("GlassStroke") : Brushes.Transparent,
+                    BorderThickness = new Thickness(1),
                     Child = new TextBlock { Text = label, FontSize = 12, FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal },
                 },
             };
@@ -236,8 +242,10 @@ public partial class SettingsPage : UserControl
         }
         return new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF)),
-            CornerRadius = new CornerRadius(8),
+            Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(100),
             Padding = new Thickness(2),
             Child = panel,
         };
@@ -245,7 +253,7 @@ public partial class SettingsPage : UserControl
 
     private Button Push(string text, Action onClick, bool prominent = false)
     {
-        var button = new Button { Style = (Style)FindResource(prominent ? "AccentButton" : "GhostButton"), Content = text, FontSize = 12, Padding = new Thickness(12, 5, 12, 5) };
+        var button = new Button { Style = (Style)FindResource(prominent ? "AccentButton" : "GhostButton"), Content = text, Height = 30, Padding = new Thickness(14, 0, 14, 0) };
         button.Click += (_, _) => onClick();
         return button;
     }

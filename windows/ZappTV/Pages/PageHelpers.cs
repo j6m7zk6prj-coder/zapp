@@ -101,8 +101,10 @@ public static class UiFactory
         {
             Child = panel,
             Padding = new Thickness(18, 14, 18, 14),
-            CornerRadius = new CornerRadius(14),
-            Background = (Brush)Application.Current.FindResource("SurfaceBrush"),
+            CornerRadius = new CornerRadius(16),
+            Background = (Brush)Application.Current.FindResource("GlassPanel"),
+            BorderBrush = (Brush)Application.Current.FindResource("GlassPanelStroke"),
+            BorderThickness = new Thickness(1),
             Margin = new Thickness(40, 0, 40, 24),
             MaxWidth = 900,
             HorizontalAlignment = HorizontalAlignment.Left,

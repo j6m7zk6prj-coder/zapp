@@ -229,7 +229,7 @@ public sealed class ChannelPickerWindow : CodeDialog
         var keywords = new TextBox { Style = S("Field"), Text = Services.Settings.Data.BroadcasterKeywords(slug), Tag = "Ex. : Canal+ Foot, beIN Sports 1" };
         keywords.LostFocus += (_, _) => SaveKeywords(keywords.Text);
         header.Children.Add(keywords);
-        var reset = new Button { Style = S("GhostButton"), Content = "Rétablir les diffuseurs par défaut", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0), Padding = new Thickness(12, 6, 12, 6) };
+        var reset = new Button { Style = S("GhostButton"), Content = "Rétablir les diffuseurs par défaut", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
         reset.Click += (_, _) =>
         {
             Services.Settings.Update(s => s.FootBroadcasters.Remove(slug));

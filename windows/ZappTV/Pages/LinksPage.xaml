@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <DataTemplate x:Key="LinkRowTemplate">
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="14" Padding="14,10" Margin="0,0,8,10" MaxWidth="1100" HorizontalAlignment="Stretch">
+            <Border Style="{StaticResource GlassCard}" Padding="14,10" Margin="0,0,8,10" MaxWidth="1100" HorizontalAlignment="Stretch">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -11,11 +11,11 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid Width="112" Height="63">
-                        <Border CornerRadius="10" Background="{Binding Name, Converter={StaticResource Gradient}}">
+                        <Border CornerRadius="12" Background="{Binding Name, Converter={StaticResource Gradient}}">
                             <TextBlock Text="{Binding Initials}" FontSize="18" FontWeight="Black"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <Border CornerRadius="10" Background="{DynamicResource SurfaceHighBrush}"
+                        <Border CornerRadius="12" Background="{DynamicResource SurfaceHighBrush}"
                                 Visibility="{Binding HasLogo, Converter={StaticResource BoolToVisibility}}">
                             <Image Source="{Binding LogoUrl, Converter={StaticResource ImageUrl}, ConverterParameter=140}" Stretch="Uniform" Margin="10,7" />
                         </Border>

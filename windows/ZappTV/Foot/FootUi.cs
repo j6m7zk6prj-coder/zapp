@@ -79,8 +79,8 @@ public static class FootUi
         var badge = new Border
         {
             Background = background,
-            CornerRadius = new CornerRadius(5),
-            Padding = new Thickness(7, 2, 7, 2),
+            CornerRadius = new CornerRadius(100),
+            Padding = new Thickness(8, 2, 8, 2),
             VerticalAlignment = VerticalAlignment.Center,
             Child = new TextBlock { Text = text, FontSize = 11, FontWeight = FontWeights.Black, Foreground = foreground ?? Brushes.White },
         };
@@ -150,8 +150,8 @@ public static class FootUi
             Width = width,
             CornerRadius = new CornerRadius(16),
             Padding = new Thickness(16, 14, 16, 14),
-            Background = B("SurfaceBrush"),
-            BorderBrush = m.State == MatchState.Live ? LiveBrush : B("HairlineBrush"),
+            Background = B("GlassPanel"),
+            BorderBrush = m.State == MatchState.Live ? LiveBrush : B("GlassPanelStroke"),
             BorderThickness = new Thickness(1),
             Child = panel,
         };
@@ -241,7 +241,7 @@ public static class FootUi
         var header = new DockPanel { Margin = new Thickness(0, 30, 0, 12) };
         if (action != null && onAction != null)
         {
-            var button = new Button { Style = S("GhostButton"), Content = action, Padding = new Thickness(14, 7, 14, 7) };
+            var button = new Button { Style = S("GhostButton"), Content = action };
             button.Click += (_, _) => onAction();
             DockPanel.SetDock(button, Dock.Right);
             header.Children.Add(button);
@@ -287,7 +287,9 @@ public static class FootUi
 
     public static Border Card(UIElement child, Thickness? padding = null) => new()
     {
-        Background = B("SurfaceBrush"),
+        Background = B("GlassPanel"),
+        BorderBrush = B("GlassPanelStroke"),
+        BorderThickness = new Thickness(1),
         CornerRadius = new CornerRadius(16),
         Padding = padding ?? new Thickness(20, 16, 20, 16),
         Child = child,
@@ -296,15 +298,15 @@ public static class FootUi
     public static Button ChannelButton(ZappTV.Core.MediaItem channel, IReadOnlyList<ZappTV.Core.MediaItem> context)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal };
-        var logo = new Border { Width = 64, Height = 36, CornerRadius = new CornerRadius(7), Background = B("SurfaceHighBrush"), Margin = new Thickness(0, 0, 12, 0) };
+        var logo = new Border { Width = 60, Height = 34, CornerRadius = new CornerRadius(17), Background = B("SurfaceHighBrush"), Margin = new Thickness(0, 0, 12, 0) };
         if (ImageUrlConverter.Load(channel.LogoUrl, 128) is { } image) logo.Child = new Image { Source = image, Margin = new Thickness(5, 4, 5, 4) };
         else logo.Child = new TextBlock { Text = channel.Initials, FontWeight = FontWeights.Black, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         content.Children.Add(logo);
         content.Children.Add(Text(channel.Name, 14, FontWeights.SemiBold));
-        var play = Text("  ▶", 13);
+        var play = Text("  \uE768", 11);
         play.Foreground = B("AccentBrush");
         content.Children.Add(play);
-        var button = new Button { Style = S("GhostButton"), Content = content, Padding = new Thickness(8, 7, 16, 7), Margin = new Thickness(0, 0, 10, 10), ToolTip = "Regarder" };
+        var button = new Button { Style = S("GhostButton"), Content = content, Padding = new Thickness(4, 4, 18, 4), Margin = new Thickness(0, 0, 10, 10), ToolTip = "Regarder" };
         button.Click += (_, _) => Actions.PlayItem(channel, context);
         return button;
     }

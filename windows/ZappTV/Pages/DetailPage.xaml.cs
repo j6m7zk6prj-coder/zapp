@@ -62,9 +62,8 @@ public partial class DetailPage : UserControl
 
         BackdropFallback.Background = ThemeManager.GradientFor(item.Name);
         var backdrop = ImageUrlConverter.Load(tmdb?.Backdrop, 1600);
-        Backdrop.Source = backdrop ?? image;
-        // Image TMDB nette et grande, image de playlist floutée.
-        Backdrop.Effect = backdrop != null ? null : new System.Windows.Media.Effects.BlurEffect { Radius = 60 };
+        // Image TMDB nette et grande ; sinon l'image de playlist décodée en 24 px et agrandie (flou sans effet coûteux).
+        Backdrop.Source = backdrop ?? ImageUrlConverter.Load(item.LogoUrl, 24);
         Backdrop.Opacity = backdrop != null ? 0.85 : 0.65;
         BackdropArea.Height = backdrop != null ? 700 : 600;
         TrailerButton.Visibility = tmdb?.TrailerUrl != null ? Visibility.Visible : Visibility.Collapsed;
@@ -264,7 +263,7 @@ public partial class DetailPage : UserControl
         var thumb = new Grid { Width = 176, Height = 99 };
         thumb.Children.Add(new Border
         {
-            CornerRadius = new CornerRadius(10),
+            CornerRadius = new CornerRadius(14),
             Background = ThemeManager.GradientFor(_item.Name + episode.Season),
             Child = new TextBlock
             {
@@ -279,7 +278,7 @@ public partial class DetailPage : UserControl
         {
             thumb.Children.Add(new Border
             {
-                CornerRadius = new CornerRadius(10),
+                CornerRadius = new CornerRadius(14),
                 Background = new ImageBrush(image) { Stretch = Stretch.UniformToFill },
             });
         }

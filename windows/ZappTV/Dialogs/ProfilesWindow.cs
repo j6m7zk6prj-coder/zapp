@@ -67,7 +67,7 @@ public sealed class ProfilesWindow : CodeDialog
         var active = profile.Id == Services.Profiles.Active.Id;
         var avatar = Avatar(profile.Initial, ThemeManager.ColorOf(profile.Color), active);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
-        var edit = new Button { Style = S("GhostButton"), Content = "Modifier", Padding = new Thickness(10, 5, 10, 5), FontSize = 12 };
+        var edit = new Button { Style = S("GhostButton"), Content = "Modifier", Height = 30, Padding = new Thickness(14, 0, 14, 0) };
         edit.Click += (_, _) => new ProfileEditWindow(profile).ShowDialog();
         actions.Children.Add(edit);
         var panel = Tile(avatar, profile.Name, active ? "Profil actif" : null);
@@ -111,7 +111,7 @@ public sealed class ProfilesWindow : CodeDialog
     {
         Width = size,
         Height = size,
-        CornerRadius = new CornerRadius(size * 0.22),
+        CornerRadius = new CornerRadius(size / 2),
         Background = new SolidColorBrush(color),
         BorderBrush = ring ? Brushes.White : Brushes.Transparent,
         BorderThickness = new Thickness(3),

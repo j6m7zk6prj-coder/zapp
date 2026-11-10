@@ -188,7 +188,7 @@ public partial class HomePage : UserControl
     {
         var panel = new StackPanel { Margin = new Thickness(40, 0, 0, 26) };
         var header = new DockPanel { Margin = new Thickness(0, 0, 40, 10) };
-        var all = new Button { Style = (Style)FindResource("GhostButton"), Content = "Tout le foot", Padding = new Thickness(14, 6, 14, 6) };
+        var all = new Button { Style = (Style)FindResource("GhostButton"), Content = "Tout le foot" };
         all.Click += (_, _) => MainWindow.Instance.ShowSection("foot");
         DockPanel.SetDock(all, Dock.Right);
         header.Children.Add(all);

@@ -68,8 +68,8 @@ public partial class HeroBanner : UserControl
         Fallback.Background = ThemeManager.GradientFor(item.Name);
         var image = ImageUrlConverter.Load(item.LogoUrl, isLive ? 600 : 900);
         var backdrop = ImageUrlConverter.Load(trend?.Backdrop, 1600);
-        Backdrop.Source = isLive ? null : backdrop ?? image;
-        Backdrop.Effect = backdrop != null ? null : new System.Windows.Media.Effects.BlurEffect { Radius = 36 };
+        // Sans image de fond TMDB : l'affiche décodée en 24 px et agrandie donne un flou doux, sans effet coûteux.
+        Backdrop.Source = isLive ? null : backdrop ?? ImageUrlConverter.Load(item.LogoUrl, 24);
         if (ImageUrlConverter.Load(trend?.Poster, 400) is { } poster) image = poster;
         LiveLogo.Source = isLive ? image : null;
         LiveLogo.Visibility = isLive ? Visibility.Visible : Visibility.Collapsed;

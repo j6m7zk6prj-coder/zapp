@@ -11,7 +11,7 @@
             <TextBlock Text="Direct, films, séries et foot réunis dans une interface pensée pour le grand écran." FontSize="16" HorizontalAlignment="Center"
                        TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}" />
 
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="18" Padding="26,20" Margin="0,34,0,0">
+            <Border Style="{StaticResource GlassCard}" Padding="26,20" Margin="0,34,0,0">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,6">
                         <TextBlock Text="&#xE71B;" Style="{StaticResource NavIcon}" Foreground="{DynamicResource AccentBrush}" />
@@ -38,7 +38,7 @@
                     <TextBlock Text="Ajouter un lien" />
                 </StackPanel>
             </Button>
-            <Button Style="{StaticResource GhostButton}" Margin="0,12,0,0" Padding="16,12" Click="AddPlaylist_Click"
+            <Button Style="{StaticResource GhostButton}" Margin="0,12,0,0" Height="44" Padding="20,0" Click="AddPlaylist_Click"
                     HorizontalAlignment="Stretch" Content="Ajouter une playlist" FontWeight="SemiBold" FontSize="15" />
 
             <TextBlock Style="{StaticResource Caption}" TextAlignment="Center" Margin="0,22,0,0"

@@ -23,20 +23,17 @@
                 ContextMenu="{StaticResource TileMenu}" ToolTip="{Binding Item.Name}">
             <StackPanel>
                 <Grid Height="{Binding ArtHeight}">
-                    <Grid.Effect>
-                        <DropShadowEffect BlurRadius="18" ShadowDepth="5" Opacity="0.45" Direction="270" />
-                    </Grid.Effect>
-                    <Border CornerRadius="12" Background="{Binding Item.Name, Converter={StaticResource Gradient}}">
+                    <Border CornerRadius="14" Background="{Binding Item.Name, Converter={StaticResource Gradient}}">
                         <TextBlock Text="{Binding Item.DisplayName}" FontSize="15" FontWeight="Black" TextWrapping="Wrap"
                                    VerticalAlignment="Bottom" Margin="12" MaxHeight="90" TextTrimming="CharacterEllipsis" />
                     </Border>
-                    <Border CornerRadius="12" Visibility="{Binding HasLogo, Converter={StaticResource BoolToVisibility}}">
+                    <Border CornerRadius="14" Visibility="{Binding HasLogo, Converter={StaticResource BoolToVisibility}}">
                         <Border.Background>
                             <ImageBrush ImageSource="{Binding Item.LogoUrl, Converter={StaticResource ImageUrl}, ConverterParameter=320}"
                                         Stretch="UniformToFill" />
                         </Border.Background>
                     </Border>
-                    <Border CornerRadius="12" BorderBrush="#1FFFFFFF" BorderThickness="1" />
+                    <Border CornerRadius="14" BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1" />
                     <Border Width="26" Height="26" CornerRadius="13" Background="#A6000000" Margin="8"
                             HorizontalAlignment="Right" VerticalAlignment="Top"
                             Visibility="{Binding IsFavorite, Converter={StaticResource BoolToVisibility}}">
@@ -56,19 +53,16 @@
                 ContextMenu="{StaticResource TileMenu}" ToolTip="{Binding Item.Name}">
             <StackPanel>
                 <Grid Height="{Binding ArtHeight}">
-                    <Grid.Effect>
-                        <DropShadowEffect BlurRadius="18" ShadowDepth="5" Opacity="0.45" Direction="270" />
-                    </Grid.Effect>
-                    <Border CornerRadius="12" Background="{Binding Item.Name, Converter={StaticResource Gradient}}">
+                    <Border CornerRadius="14" Background="{Binding Item.Name, Converter={StaticResource Gradient}}">
                         <TextBlock Text="{Binding Item.Initials}" FontSize="30" FontWeight="Black"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <Border CornerRadius="12" Background="{DynamicResource SurfaceHighBrush}"
+                    <Border CornerRadius="14" Background="{DynamicResource SurfaceHighBrush}"
                             Visibility="{Binding HasLogo, Converter={StaticResource BoolToVisibility}}">
                         <Image Source="{Binding Item.LogoUrl, Converter={StaticResource ImageUrl}, ConverterParameter=260}"
                                Stretch="Uniform" Margin="22,16" RenderOptions.BitmapScalingMode="HighQuality" />
                     </Border>
-                    <Border CornerRadius="12" BorderBrush="#1FFFFFFF" BorderThickness="1" />
+                    <Border CornerRadius="14" BorderBrush="{StaticResource GlassPanelStroke}" BorderThickness="1" />
                     <Border Width="26" Height="26" CornerRadius="13" Background="#A6000000" Margin="8"
                             HorizontalAlignment="Right" VerticalAlignment="Top"
                             Visibility="{Binding IsFavorite, Converter={StaticResource BoolToVisibility}}">
@@ -98,11 +92,11 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid Width="96" Height="54" HorizontalAlignment="Left">
-                    <Border CornerRadius="8" Background="{Binding Item.Name, Converter={StaticResource Gradient}}">
+                    <Border CornerRadius="12" Background="{Binding Item.Name, Converter={StaticResource Gradient}}">
                         <TextBlock Text="{Binding Item.Initials}" FontSize="16" FontWeight="Black"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <Border CornerRadius="8" Background="{DynamicResource SurfaceHighBrush}"
+                    <Border CornerRadius="12" Background="{DynamicResource SurfaceHighBrush}"
                             Visibility="{Binding HasLogo, Converter={StaticResource BoolToVisibility}}">
                         <Image Source="{Binding Item.LogoUrl, Converter={StaticResource ImageUrl}, ConverterParameter=120}"
                                Stretch="Uniform" Margin="8,6" />
