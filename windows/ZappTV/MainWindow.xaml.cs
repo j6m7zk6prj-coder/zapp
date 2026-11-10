@@ -17,7 +17,6 @@ public partial class MainWindow : Window
 
     private readonly Stack<FrameworkElement> _history = new();
     private readonly DispatcherTimer _toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
-    private readonly DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly DispatcherTimer _liveTimer = new() { Interval = TimeSpan.FromMinutes(2) };
     private string _section = "home";
     private bool _syncingNav;
@@ -26,6 +25,7 @@ public partial class MainWindow : Window
     {
         Instance = this;
         InitializeComponent();
+        SmoothScroll.AttachHorizontal(this);
         WindowSizing.Fit(this, 1400, 860);
         DarkTitleBar.Attach(this);
 
@@ -43,7 +43,6 @@ public partial class MainWindow : Window
         Services.Profiles.FootChanged += CheckLiveAsync;
         Services.Settings.Changed += OnSettingsChanged;
 
-        _clockTimer.Tick += (_, _) => UpdateClock();
         _liveTimer.Tick += (_, _) => CheckLiveAsync();
 
         Loaded += (_, _) =>
@@ -67,14 +66,8 @@ public partial class MainWindow : Window
 
     private void OnSettingsChanged()
     {
-        var show = Services.Settings.Data.ShowClock;
-        ClockText.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        if (show) _clockTimer.Start(); else _clockTimer.Stop();
-        UpdateClock();
         if (!Services.Settings.Data.ShowLiveBadge) LiveDot.Visibility = Visibility.Collapsed;
     }
-
-    private void UpdateClock() => ClockText.Text = DateTime.Now.ToString("HH:mm");
 
     private void UpdateAvatar()
     {
@@ -84,6 +77,7 @@ public partial class MainWindow : Window
         AvatarCircle.Background = new System.Windows.Media.SolidColorBrush(color);
         AvatarText.Foreground = ThemeManager.IsLight(profile.Color) ? System.Windows.Media.Brushes.Black : System.Windows.Media.Brushes.White;
         AvatarButton.ToolTip = $"Profil : {profile.Name}";
+        ProfileName.Text = profile.Name;
     }
 
     private void OnProfileSwitched()
@@ -118,12 +112,10 @@ public partial class MainWindow : Window
     }
 
     private void Logo_Click(object sender, RoutedEventArgs e) => ShowSection("home");
-    private void Search_Click(object sender, RoutedEventArgs e) => ShowSection("search");
-    private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("settings");
 
     private void Avatar_Click(object sender, RoutedEventArgs e)
     {
-        var menu = new ContextMenu { PlacementTarget = AvatarButton, Placement = PlacementMode.Bottom };
+        var menu = new ContextMenu { PlacementTarget = AvatarButton, Placement = PlacementMode.Top };
         var header = new MenuItem { Header = $"{Services.Profiles.Active.Name}  ·  {StatusLine()}", IsEnabled = false };
         menu.Items.Add(header);
         menu.Items.Add(new Separator());
@@ -192,10 +184,8 @@ public partial class MainWindow : Window
     private void SyncNav()
     {
         _syncingNav = true;
-        foreach (var radio in new[] { NavHome, NavLive, NavMovies, NavSeries, NavFoot, NavLinks })
+        foreach (var radio in new[] { NavHome, NavLive, NavMovies, NavSeries, NavFoot, NavLinks, NavSearch, NavSettings })
             radio.IsChecked = (string)radio.Tag == _section;
-        SearchButton.Opacity = _section == "search" ? 1 : 0.85;
-        SettingsButton.Opacity = _section == "settings" ? 1 : 0.85;
         _syncingNav = false;
     }
 
@@ -252,7 +242,7 @@ public partial class MainWindow : Window
         if (AddButton.ContextMenu is { } menu)
         {
             menu.PlacementTarget = AddButton;
-            menu.Placement = PlacementMode.Top;
+            menu.Placement = PlacementMode.Right;
             menu.IsOpen = true;
         }
     }
